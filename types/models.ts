@@ -20,6 +20,37 @@ export type PenaltyType = 'heo_den' | 'heo_do' | 'ba_tep' | 'ba_doi_thong' | 'tu
 // Chặt Heo types
 export type ChatHeoType = 'heo_den' | 'heo_do' | 'tu_quy' | 'ba_doi_thong';
 
+// Player Action types (NEW - for tracking all actions)
+export type PlayerActionType = 'heo' | 'chong' | 'giet' | 'dut_ba_tep';
+
+// Player Action (NEW - tracks all actions in a round)
+export interface PlayerAction {
+    id: string;
+    roundId: string;
+    actionType: PlayerActionType;
+    actorId: string; // Who performed the action
+    targetId?: string; // Who is affected (for Heo, Chồng, Giết)
+
+    // For Heo
+    heoType?: 'den' | 'do';
+    heoCount?: number;
+
+    // For Chồng
+    chongTypes?: ChatHeoType[]; // Can chồng multiple types
+    chongCounts?: { [type in ChatHeoType]?: number };
+
+    // For Giết
+    killedPenalties?: {
+        type: PenaltyType;
+        count: number;
+    }[];
+
+    // For Đút 3 Tép
+    dutBaTepCount?: number;
+
+    createdAt: number;
+}
+
 // Scoring configuration (UPDATED - all values user-configurable)
 export interface ScoringConfig {
     id: string;
@@ -85,17 +116,20 @@ export interface Round {
     // Special conditions
     toiTrangWinner?: string; // Only ONE player can win Tới Trắng
 
-    // Penalties (Thối)
+    // Player Actions (NEW - tracks all actions)
+    actions: PlayerAction[];
+
+    // Penalties (Thối) - DEPRECATED, use actions instead
     penalties: {
         playerId: string;
         type: PenaltyType;
         count: number;
     }[];
 
-    // Chặt Heo (with chaining)
+    // Chặt Heo (with chaining) - DEPRECATED, use actions instead
     chatHeoChains: ChatHeoChain[];
 
-    // Đút 3 Tép
+    // Đút 3 Tép - DEPRECATED, use actions instead
     dutBaTepPlayers: string[];
 
     // Calculated scores for this round

@@ -7,14 +7,16 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  Switch,
+  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useMatch } from '../contexts/MatchContext';
-import { PenaltyType } from '../types/models';
+import { PlayerAction, PlayerActionType, PenaltyType, ChatHeoType } from '../types/models';
 import i18n from '../utils/i18n';
+
+type PenaltyModalStep = 'select_type' | 'heo' | 'chong' | 'giet';
 
 export const RoundInputScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -23,8 +25,27 @@ export const RoundInputScreen: React.FC = () => {
 
   const [rankings, setRankings] = useState<{ [playerId: string]: 1 | 2 | 3 | 4 | undefined }>({});
   const [toiTrangWinner, setToiTrangWinner] = useState<string | undefined>();
-  const [penalties, setPenalties] = useState<{ [playerId: string]: { [key in PenaltyType]?: number } }>({});
-  const [dutBaTep, setDutBaTep] = useState<{ [playerId: string]: boolean }>({});
+  const [actions, setActions] = useState<PlayerAction[]>([]);
+  
+  // Penalty Modal State
+  const [showPenaltyModal, setShowPenaltyModal] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+  const [modalStep, setModalStep] = useState<PenaltyModalStep>('select_type');
+  const [penaltyType, setPenaltyType] = useState<'heo' | 'chong' | 'giet' | null>(null);
+  
+  // Heo state
+  const [heoType, setHeoType] = useState<'den' | 'do'>('den');
+  const [heoCount, setHeoCount] = useState(1);
+  const [heoTarget, setHeoTarget] = useState<string | null>(null);
+  
+  // Chồng state
+  const [chongTypes, setChongTypes] = useState<ChatHeoType[]>([]);
+  const [chongCounts, setChongCounts] = useState<{ [key in ChatHeoType]?: number }>({});
+  const [chongTarget, setChongTarget] = useState<string | null>(null);
+  
+  // Giết state
+  const [gietTarget, setGietTarget] = useState<string | null>(null);
+  const [gietPenalties, setGietPenalties] = useState<{ type: PenaltyType; count: number }[]>([]);
 
   if (!activeMatch) {
     return (
@@ -39,19 +60,13 @@ export const RoundInputScreen: React.FC = () => {
   const config = activeMatch.configSnapshot;
 
   const setPlayerRank = (playerId: string, rank: 1 | 2 | 3 | 4) => {
-    // Check if rank is already taken
     const existingPlayer = Object.entries(rankings).find(([id, r]) => r === rank && id !== playerId);
     if (existingPlayer) {
-      Alert.alert('Lỗi', `Hạng ${rank} đã được chọn bởi người chơi khác`);
+      Alert.alert('Lỗi', `Hạng ${rank} đã được chọn`);
       return;
     }
-
     setRankings({ ...rankings, [playerId]: rank });
-
-    // If player is rank 1 and Tới Trắng is enabled, allow setting
-    if (rank === 1 && config.enableToiTrang) {
-      // Can set tới trắng
-    } else if (toiTrangWinner === playerId) {
+    if (rank !== 1 && toiTrangWinner === playerId) {
       setToiTrangWinner(undefined);
     }
   };
@@ -64,113 +79,187 @@ export const RoundInputScreen: React.FC = () => {
     setToiTrangWinner(toiTrangWinner === playerId ? undefined : playerId);
   };
 
-  const addPenalty = (playerId: string, type: PenaltyType) => {
-    const current = penalties[playerId] || {};
-    const count = (current[type] || 0) + 1;
-    setPenalties({
-      ...penalties,
-      [playerId]: { ...current, [type]: count },
-    });
+  const openPenaltyModal = (playerId: string) => {
+    setSelectedPlayer(playerId);
+    setModalStep('select_type');
+    setPenaltyType(null);
+    setShowPenaltyModal(true);
   };
 
-  const removePenalty = (playerId: string, type: PenaltyType) => {
-    const current = penalties[playerId] || {};
-    const count = Math.max(0, (current[type] || 0) - 1);
-    setPenalties({
-      ...penalties,
-      [playerId]: { ...current, [type]: count },
-    });
+  const closePenaltyModal = () => {
+    setShowPenaltyModal(false);
+    setSelectedPlayer(null);
+    setModalStep('select_type');
+    setPenaltyType(null);
+    // Reset states
+    setHeoType('den');
+    setHeoCount(1);
+    setHeoTarget(null);
+    setChongTypes([]);
+    setChongCounts({});
+    setChongTarget(null);
+    setGietTarget(null);
+    setGietPenalties([]);
+  };
+
+  const selectPenaltyType = (type: 'heo' | 'chong' | 'giet') => {
+    setPenaltyType(type);
+    setModalStep(type);
+  };
+
+  const getAvailableTargets = () => {
+    // Players who have ranks (excluding current player)
+    return activeMatch.playerIds.filter(id => id !== selectedPlayer && rankings[id] !== undefined);
+  };
+
+  const toggleChongType = (type: ChatHeoType) => {
+    if (chongTypes.includes(type)) {
+      setChongTypes(chongTypes.filter(t => t !== type));
+      const newCounts = { ...chongCounts };
+      delete newCounts[type];
+      setChongCounts(newCounts);
+    } else {
+      setChongTypes([...chongTypes, type]);
+      setChongCounts({ ...chongCounts, [type]: 1 });
+    }
+  };
+
+  const updateChongCount = (type: ChatHeoType, delta: number) => {
+    const current = chongCounts[type] || 1;
+    const newCount = Math.max(1, current + delta);
+    setChongCounts({ ...chongCounts, [type]: newCount });
+  };
+
+  const addGietPenalty = (type: PenaltyType) => {
+    const existing = gietPenalties.find(p => p.type === type);
+    if (existing) {
+      setGietPenalties(gietPenalties.map(p => 
+        p.type === type ? { ...p, count: p.count + 1 } : p
+      ));
+    } else {
+      setGietPenalties([...gietPenalties, { type, count: 1 }]);
+    }
+  };
+
+  const removeGietPenalty = (type: PenaltyType) => {
+    const existing = gietPenalties.find(p => p.type === type);
+    if (existing && existing.count > 1) {
+      setGietPenalties(gietPenalties.map(p => 
+        p.type === type ? { ...p, count: p.count - 1 } : p
+      ));
+    } else {
+      setGietPenalties(gietPenalties.filter(p => p.type !== type));
+    }
+  };
+
+  const saveAction = () => {
+    if (!selectedPlayer) return;
+
+    const newAction: PlayerAction = {
+      id: `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      roundId: '', // Will be set when round is created
+      actionType: penaltyType as PlayerActionType,
+      actorId: selectedPlayer,
+      createdAt: Date.now(),
+    };
+
+    if (penaltyType === 'heo') {
+      if (!heoTarget) {
+        Alert.alert('Lỗi', 'Vui lòng chọn người bị phạt');
+        return;
+      }
+      newAction.targetId = heoTarget;
+      newAction.heoType = heoType;
+      newAction.heoCount = heoCount;
+    } else if (penaltyType === 'chong') {
+      if (!chongTarget || chongTypes.length === 0) {
+        Alert.alert('Lỗi', 'Vui lòng chọn loại chồng và người bị phạt');
+        return;
+      }
+      newAction.targetId = chongTarget;
+      newAction.chongTypes = chongTypes;
+      newAction.chongCounts = chongCounts;
+    } else if (penaltyType === 'giet') {
+      if (!gietTarget) {
+        Alert.alert('Lỗi', 'Vui lòng chọn người bị giết');
+        return;
+      }
+      newAction.targetId = gietTarget;
+      newAction.killedPenalties = gietPenalties;
+    }
+
+    setActions([...actions, newAction]);
+    closePenaltyModal();
+    Alert.alert('Thành công', 'Đã thêm phạt');
   };
 
   const calculateAndSave = () => {
-    // Validate all players have ranks
-    const allRanked = activeMatch.playerIds.every(id => rankings[id] !== undefined);
-    if (!allRanked) {
-      Alert.alert('Lỗi', 'Vui lòng chọn hạng cho tất cả người chơi');
-      return;
+    if (toiTrangWinner) {
+      if (rankings[toiTrangWinner] !== 1) {
+        Alert.alert('Lỗi', 'Người Tới Trắng phải về nhất');
+        return;
+      }
+    } else {
+      const allRanked = activeMatch.playerIds.every(id => rankings[id] !== undefined);
+      if (!allRanked) {
+        Alert.alert('Lỗi', 'Vui lòng chọn hạng cho tất cả người chơi');
+        return;
+      }
     }
 
-    // Simple scoring calculation (will be improved with full scoring engine)
+    // Simple scoring (will be improved)
     const roundScores: { [playerId: string]: number } = {};
     
     if (toiTrangWinner) {
-      // Tới Trắng: winner gets positive, all others get negative
       const winnerScore = config.baseRatioFirst * config.toiTrangMultiplier;
       activeMatch.playerIds.forEach(id => {
-        roundScores[id] = id === toiTrangWinner ? winnerScore : -winnerScore;
+        roundScores[id] = id === toiTrangWinner ? winnerScore * 3 : -winnerScore;
       });
     } else {
-      // Basic scoring
       const sorted = activeMatch.playerIds.sort((a, b) => (rankings[a] || 5) - (rankings[b] || 5));
       roundScores[sorted[0]] = config.baseRatioFirst;
       roundScores[sorted[1]] = config.baseRatioSecond;
       roundScores[sorted[2]] = -config.baseRatioSecond;
       roundScores[sorted[3]] = -config.baseRatioFirst;
-
-      // Add penalties (simplified)
-      if (config.enablePenalties) {
-        activeMatch.playerIds.forEach(playerId => {
-          const playerPenalties = penalties[playerId] || {};
-          let penaltyTotal = 0;
-          
-          Object.entries(playerPenalties).forEach(([type, count]) => {
-            if (!count) return;
-            let value = 0;
-            switch (type as PenaltyType) {
-              case 'heo_den': value = config.penaltyHeoDen; break;
-              case 'heo_do': value = config.penaltyHeoDo; break;
-              case 'ba_tep': value = config.penaltyBaTep; break;
-              case 'ba_doi_thong': value = config.penaltyBaDoiThong; break;
-              case 'tu_quy': value = config.penaltyTuQuy; break;
-            }
-            penaltyTotal += value * count;
-          });
-
-          if (penaltyTotal > 0) {
-            roundScores[playerId] -= penaltyTotal;
-            // Give to 3rd place
-            roundScores[sorted[2]] += penaltyTotal;
-          }
-        });
-      }
     }
 
-    // Create round
     const roundData = {
       roundNumber: activeMatch.rounds.length + 1,
       rankings: activeMatch.playerIds.map(id => ({
         playerId: id,
-        rank: rankings[id]!,
+        rank: rankings[id] || 4,
       })),
       toiTrangWinner,
-      penalties: Object.entries(penalties).flatMap(([playerId, penaltyMap]) =>
-        Object.entries(penaltyMap)
-          .filter(([_, count]) => count && count > 0)
-          .map(([type, count]) => ({
-            playerId,
-            type: type as PenaltyType,
-            count: count!,
-          }))
-      ),
-      chatHeoChains: [], // Simplified for now
-      dutBaTepPlayers: Object.entries(dutBaTep)
-        .filter(([_, enabled]) => enabled)
-        .map(([playerId]) => playerId),
+      actions,
+      penalties: [],
+      chatHeoChains: [],
+      dutBaTepPlayers: [],
       roundScores,
     };
 
     try {
       addRound(roundData);
       Alert.alert('Thành công', 'Đã lưu ván đấu', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
+        { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
       console.error('Error saving round:', error);
       Alert.alert('Lỗi', 'Không thể lưu ván đấu');
     }
+  };
+
+  const getRankColor = (rank: number) => {
+    switch (rank) {
+      case 1: return '#FFD700';
+      case 2: return '#C0C0C0';
+      case 3: return '#CD7F32';
+      case 4: return '#8B4513';
+      default: return theme.border;
+    }
+  };
+
+  const getPlayerActions = (playerId: string) => {
+    return actions.filter(a => a.actorId === playerId);
   };
 
   return (
@@ -181,7 +270,7 @@ export const RoundInputScreen: React.FC = () => {
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: 16 }}>
           <Text style={[styles.title, { color: theme.text }]}>
-            Nhập Kết Quả Ván {activeMatch.rounds.length + 1}
+            Ván {activeMatch.rounds.length + 1}
           </Text>
         </View>
       </View>
@@ -190,102 +279,79 @@ export const RoundInputScreen: React.FC = () => {
         {activeMatch.playerIds.map((playerId, index) => {
           const playerName = activeMatch.playerNames[index];
           const rank = rankings[playerId];
+          const playerActions = getPlayerActions(playerId);
 
           return (
-            <View key={playerId} style={[styles.playerSection, { backgroundColor: theme.card }]}>
-              <Text style={[styles.playerName, { color: theme.text }]}>{playerName}</Text>
-
-              {/* Rank Selection */}
-              <View style={styles.rankRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Hạng:</Text>
-                <View style={styles.rankButtons}>
-                  {[1, 2, 3, 4].map(r => (
-                    <TouchableOpacity
-                      key={r}
-                      style={[
-                        styles.rankButton,
-                        {
-                          backgroundColor: rank === r ? theme.primary : theme.surface,
-                          borderColor: theme.border,
-                        },
-                      ]}
-                      onPress={() => setPlayerRank(playerId, r as 1 | 2 | 3 | 4)}
-                    >
-                      <Text
-                        style={[
-                          styles.rankButtonText,
-                          { color: rank === r ? '#FFF' : theme.text },
-                        ]}
-                      >
-                        {r}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+            <View key={playerId} style={[styles.playerCard, { backgroundColor: theme.card }]}>
+              <View style={styles.playerHeader}>
+                <View style={[styles.playerAvatar, { backgroundColor: theme.primary }]}>
+                  <Text style={styles.playerAvatarText}>{playerName.charAt(0).toUpperCase()}</Text>
                 </View>
+                <Text style={[styles.playerName, { color: theme.text }]}>{playerName}</Text>
+                {playerActions.length > 0 && (
+                  <View style={[styles.actionBadge, { backgroundColor: theme.error }]}>
+                    <Text style={styles.actionBadgeText}>{playerActions.length}</Text>
+                  </View>
+                )}
               </View>
 
-              {/* Tới Trắng */}
+              <View style={styles.rankRow}>
+                {[1, 2, 3, 4].map(r => (
+                  <TouchableOpacity
+                    key={r}
+                    style={[
+                      styles.rankButton,
+                      {
+                        backgroundColor: rank === r ? getRankColor(r) : theme.surface,
+                        borderColor: rank === r ? getRankColor(r) : theme.border,
+                      },
+                    ]}
+                    onPress={() => setPlayerRank(playerId, r as 1 | 2 | 3 | 4)}
+                  >
+                    <Text
+                      style={[
+                        styles.rankButtonText,
+                        { color: rank === r ? '#FFF' : theme.text },
+                      ]}
+                    >
+                      {r}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               {config.enableToiTrang && rank === 1 && (
-                <View style={styles.switchRow}>
-                  <Text style={[styles.label, { color: theme.textSecondary }]}>
-                    {i18n.t('toiTrang')}
-                  </Text>
-                  <Switch
-                    value={toiTrangWinner === playerId}
-                    onValueChange={() => toggleToiTrang(playerId)}
-                    trackColor={{ false: theme.border, true: theme.primary }}
-                    thumbColor="#FFF"
+                <TouchableOpacity
+                  style={[
+                    styles.toiTrangButton,
+                    { backgroundColor: toiTrangWinner === playerId ? theme.warning : theme.surface },
+                  ]}
+                  onPress={() => toggleToiTrang(playerId)}
+                >
+                  <Ionicons
+                    name={toiTrangWinner === playerId ? 'star' : 'star-outline'}
+                    size={20}
+                    color={toiTrangWinner === playerId ? '#FFF' : theme.text}
                   />
-                </View>
+                  <Text
+                    style={[
+                      styles.toiTrangText,
+                      { color: toiTrangWinner === playerId ? '#FFF' : theme.text },
+                    ]}
+                  >
+                    Tới Trắng
+                  </Text>
+                </TouchableOpacity>
               )}
 
-              {/* Penalties */}
-              {config.enablePenalties && !toiTrangWinner && (
-                <View style={styles.penaltiesSection}>
-                  <Text style={[styles.sectionLabel, { color: theme.text }]}>Phạt:</Text>
-                  {(['heo_den', 'heo_do', 'ba_tep', 'ba_doi_thong', 'tu_quy'] as PenaltyType[]).map(type => {
-                    const count = penalties[playerId]?.[type] || 0;
-                    return (
-                      <View key={type} style={styles.penaltyRow}>
-                        <Text style={[styles.penaltyLabel, { color: theme.textSecondary }]}>
-                          {i18n.t(type)}
-                        </Text>
-                        <View style={styles.counterButtons}>
-                          <TouchableOpacity
-                            style={[styles.counterButton, { backgroundColor: theme.error }]}
-                            onPress={() => removePenalty(playerId, type)}
-                          >
-                            <Ionicons name="remove" size={16} color="#FFF" />
-                          </TouchableOpacity>
-                          <Text style={[styles.counterValue, { color: theme.text }]}>
-                            {count}
-                          </Text>
-                          <TouchableOpacity
-                            style={[styles.counterButton, { backgroundColor: theme.success }]}
-                            onPress={() => addPenalty(playerId, type)}
-                          >
-                            <Ionicons name="add" size={16} color="#FFF" />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
-
-              {/* Đút 3 Tép */}
-              {config.enableDutBaTep && !toiTrangWinner && (
-                <View style={styles.switchRow}>
-                  <Text style={[styles.label, { color: theme.textSecondary }]}>
-                    {i18n.t('dutBaTep')}
-                  </Text>
-                  <Switch
-                    value={dutBaTep[playerId] || false}
-                    onValueChange={(value) => setDutBaTep({ ...dutBaTep, [playerId]: value })}
-                    trackColor={{ false: theme.border, true: theme.primary }}
-                    thumbColor="#FFF"
-                  />
-                </View>
+              {!toiTrangWinner && rank && (
+                <TouchableOpacity
+                  style={[styles.penaltyButton, { backgroundColor: theme.error }]}
+                  onPress={() => openPenaltyModal(playerId)}
+                >
+                  <Ionicons name="warning" size={20} color="#FFF" />
+                  <Text style={styles.penaltyButtonText}>Phạt</Text>
+                </TouchableOpacity>
               )}
             </View>
           );
@@ -298,121 +364,374 @@ export const RoundInputScreen: React.FC = () => {
       >
         <Text style={styles.saveButtonText}>Tính Điểm và Lưu</Text>
       </TouchableOpacity>
+
+      {/* Penalty Modal */}
+      <Modal
+        visible={showPenaltyModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closePenaltyModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            {modalStep === 'select_type' && (
+              <>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Chọn Loại Phạt</Text>
+                <TouchableOpacity
+                  style={[styles.modalOption, { backgroundColor: theme.surface }]}
+                  onPress={() => selectPenaltyType('heo')}
+                >
+                  <Text style={[styles.modalOptionText, { color: theme.text }]}>Heo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalOption, { backgroundColor: theme.surface }]}
+                  onPress={() => selectPenaltyType('chong')}
+                >
+                  <Text style={[styles.modalOptionText, { color: theme.text }]}>Chồng</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalOption, { backgroundColor: theme.surface }]}
+                  onPress={() => selectPenaltyType('giet')}
+                >
+                  <Text style={[styles.modalOptionText, { color: theme.text }]}>Giết</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, { backgroundColor: theme.border }]}
+                  onPress={closePenaltyModal}
+                >
+                  <Text style={styles.modalButtonText}>Hủy</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {modalStep === 'heo' && (
+              <ScrollView>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Heo</Text>
+                
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Loại:</Text>
+                <View style={styles.heoTypeRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.heoTypeButton,
+                      { backgroundColor: heoType === 'den' ? '#333' : theme.surface },
+                    ]}
+                    onPress={() => setHeoType('den')}
+                  >
+                    <Text style={[styles.heoTypeText, { color: heoType === 'den' ? '#FFF' : theme.text }]}>
+                      Đen
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.heoTypeButton,
+                      { backgroundColor: heoType === 'do' ? '#DC143C' : theme.surface },
+                    ]}
+                    onPress={() => setHeoType('do')}
+                  >
+                    <Text style={[styles.heoTypeText, { color: heoType === 'do' ? '#FFF' : theme.text }]}>
+                      Đỏ
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.label, { color: theme.textSecondary, marginTop: 16 }]}>Số lượng:</Text>
+                <View style={styles.counterRow}>
+                  <TouchableOpacity
+                    style={[styles.counterButton, { backgroundColor: theme.error }]}
+                    onPress={() => setHeoCount(Math.max(1, heoCount - 1))}
+                  >
+                    <Ionicons name="remove" size={20} color="#FFF" />
+                  </TouchableOpacity>
+                  <Text style={[styles.counterValue, { color: theme.text }]}>{heoCount}</Text>
+                  <TouchableOpacity
+                    style={[styles.counterButton, { backgroundColor: theme.success }]}
+                    onPress={() => setHeoCount(heoCount + 1)}
+                  >
+                    <Ionicons name="add" size={20} color="#FFF" />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.label, { color: theme.textSecondary, marginTop: 16 }]}>Người bị phạt:</Text>
+                {getAvailableTargets().map(targetId => {
+                  const targetIndex = activeMatch.playerIds.indexOf(targetId);
+                  const targetName = activeMatch.playerNames[targetIndex];
+                  return (
+                    <TouchableOpacity
+                      key={targetId}
+                      style={[
+                        styles.targetButton,
+                        {
+                          backgroundColor: heoTarget === targetId ? theme.primary : theme.surface,
+                        },
+                      ]}
+                      onPress={() => setHeoTarget(targetId)}
+                    >
+                      <Text
+                        style={[
+                          styles.targetButtonText,
+                          { color: heoTarget === targetId ? '#FFF' : theme.text },
+                        ]}
+                      >
+                        {targetName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.border, flex: 1, marginRight: 8 }]}
+                    onPress={() => setModalStep('select_type')}
+                  >
+                    <Text style={styles.modalButtonText}>Quay lại</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.primary, flex: 1 }]}
+                    onPress={saveAction}
+                  >
+                    <Text style={styles.modalButtonText}>Lưu</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+
+            {modalStep === 'chong' && (
+              <ScrollView>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Chồng</Text>
+                
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Chọn loại chồng:</Text>
+                {(['heo_den', 'heo_do', 'tu_quy', 'ba_doi_thong'] as ChatHeoType[]).map(type => {
+                  const isSelected = chongTypes.includes(type);
+                  const count = chongCounts[type] || 1;
+                  return (
+                    <View key={type} style={styles.chongTypeRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.chongTypeButton,
+                          {
+                            backgroundColor: isSelected ? theme.primary : theme.surface,
+                            flex: 1,
+                          },
+                        ]}
+                        onPress={() => toggleChongType(type)}
+                      >
+                        <Text
+                          style={[
+                            styles.chongTypeText,
+                            { color: isSelected ? '#FFF' : theme.text },
+                          ]}
+                        >
+                          {i18n.t(type)}
+                        </Text>
+                      </TouchableOpacity>
+                      {isSelected && (
+                        <View style={styles.chongCountRow}>
+                          <TouchableOpacity
+                            style={[styles.smallCounterButton, { backgroundColor: theme.error }]}
+                            onPress={() => updateChongCount(type, -1)}
+                          >
+                            <Ionicons name="remove" size={16} color="#FFF" />
+                          </TouchableOpacity>
+                          <Text style={[styles.smallCounterValue, { color: theme.text }]}>
+                            {count}
+                          </Text>
+                          <TouchableOpacity
+                            style={[styles.smallCounterButton, { backgroundColor: theme.success }]}
+                            onPress={() => updateChongCount(type, 1)}
+                          >
+                            <Ionicons name="add" size={16} color="#FFF" />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+
+                <Text style={[styles.label, { color: theme.textSecondary, marginTop: 16 }]}>
+                  Người bị chồng:
+                </Text>
+                {getAvailableTargets().map(targetId => {
+                  const targetIndex = activeMatch.playerIds.indexOf(targetId);
+                  const targetName = activeMatch.playerNames[targetIndex];
+                  return (
+                    <TouchableOpacity
+                      key={targetId}
+                      style={[
+                        styles.targetButton,
+                        {
+                          backgroundColor: chongTarget === targetId ? theme.primary : theme.surface,
+                        },
+                      ]}
+                      onPress={() => setChongTarget(targetId)}
+                    >
+                      <Text
+                        style={[
+                          styles.targetButtonText,
+                          { color: chongTarget === targetId ? '#FFF' : theme.text },
+                        ]}
+                      >
+                        {targetName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.border, flex: 1, marginRight: 8 }]}
+                    onPress={() => setModalStep('select_type')}
+                  >
+                    <Text style={styles.modalButtonText}>Quay lại</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.primary, flex: 1 }]}
+                    onPress={saveAction}
+                  >
+                    <Text style={styles.modalButtonText}>Lưu</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+
+            {modalStep === 'giet' && (
+              <ScrollView>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Giết</Text>
+                
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Người bị giết:</Text>
+                {getAvailableTargets().map(targetId => {
+                  const targetIndex = activeMatch.playerIds.indexOf(targetId);
+                  const targetName = activeMatch.playerNames[targetIndex];
+                  return (
+                    <TouchableOpacity
+                      key={targetId}
+                      style={[
+                        styles.targetButton,
+                        {
+                          backgroundColor: gietTarget === targetId ? theme.error : theme.surface,
+                        },
+                      ]}
+                      onPress={() => setGietTarget(targetId)}
+                    >
+                      <Text
+                        style={[
+                          styles.targetButtonText,
+                          { color: gietTarget === targetId ? '#FFF' : theme.text },
+                        ]}
+                      >
+                        {targetName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                {gietTarget && config.enablePenalties && (
+                  <>
+                    <Text style={[styles.label, { color: theme.textSecondary, marginTop: 16 }]}>
+                      Phạt thêm cho người bị giết:
+                    </Text>
+                    {(['heo_den', 'heo_do', 'ba_tep', 'ba_doi_thong', 'tu_quy'] as PenaltyType[]).map(type => {
+                      const penalty = gietPenalties.find(p => p.type === type);
+                      const count = penalty?.count || 0;
+                      return (
+                        <View key={type} style={styles.penaltyRow}>
+                          <Text style={[styles.penaltyLabel, { color: theme.text }]}>
+                            {i18n.t(type)}
+                          </Text>
+                          <View style={styles.penaltyCountRow}>
+                            <TouchableOpacity
+                              style={[styles.smallCounterButton, { backgroundColor: theme.error }]}
+                              onPress={() => removeGietPenalty(type)}
+                              disabled={count === 0}
+                            >
+                              <Ionicons name="remove" size={16} color="#FFF" />
+                            </TouchableOpacity>
+                            <Text style={[styles.smallCounterValue, { color: theme.text }]}>
+                              {count}
+                            </Text>
+                            <TouchableOpacity
+                              style={[styles.smallCounterButton, { backgroundColor: theme.success }]}
+                              onPress={() => addGietPenalty(type)}
+                            >
+                              <Ionicons name="add" size={16} color="#FFF" />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </>
+                )}
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.border, flex: 1, marginRight: 8 }]}
+                    onPress={() => setModalStep('select_type')}
+                  >
+                    <Text style={styles.modalButtonText}>Quay lại</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.primary, flex: 1 }]}
+                    onPress={saveAction}
+                  >
+                    <Text style={styles.modalButtonText}>Lưu</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    paddingBottom: 12,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  playerSection: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  playerName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  rankRow: {
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  rankButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  rankButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  rankButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  penaltiesSection: {
-    marginTop: 8,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  penaltyRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  penaltyLabel: {
-    fontSize: 14,
-  },
-  counterButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  counterButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  counterValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    minWidth: 24,
-    textAlign: 'center',
-  },
-  saveButton: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-  },
+  container: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingBottom: 12 },
+  title: { fontSize: 24, fontWeight: 'bold' },
+  content: { padding: 20, paddingBottom: 100 },
+  playerCard: { borderRadius: 12, padding: 16, marginBottom: 12 },
+  playerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  playerAvatar: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  playerAvatarText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  playerName: { fontSize: 18, fontWeight: 'bold', flex: 1 },
+  actionBadge: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  actionBadgeText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  rankRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  rankButton: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 2, alignItems: 'center' },
+  rankButtonText: { fontSize: 16, fontWeight: 'bold' },
+  toiTrangButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, marginBottom: 8, gap: 8 },
+  toiTrangText: { fontSize: 14, fontWeight: '600' },
+  penaltyButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, gap: 8 },
+  penaltyButtonText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
+  saveButton: { position: 'absolute', bottom: 20, left: 20, right: 20, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+  saveButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { fontSize: 16 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
+  modalSubtitle: { fontSize: 14, marginBottom: 16 },
+  modalOption: { paddingVertical: 16, paddingHorizontal: 20, borderRadius: 12, marginBottom: 12 },
+  modalOptionText: { fontSize: 16, fontWeight: '600', textAlign: 'center' },
+  modalButton: { paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 8 },
+  modalButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
+  modalActions: { flexDirection: 'row', marginTop: 16 },
+  label: { fontSize: 14, marginBottom: 8, fontWeight: '600' },
+  heoTypeRow: { flexDirection: 'row', gap: 12 },
+  heoTypeButton: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  heoTypeText: { fontSize: 16, fontWeight: '600' },
+  counterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
+  counterButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  counterValue: { fontSize: 24, fontWeight: 'bold', minWidth: 40, textAlign: 'center' },
+  targetButton: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, marginBottom: 8 },
+  targetButtonText: { fontSize: 16, fontWeight: '600', textAlign: 'center' },
+  chongTypeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 },
+  chongTypeButton: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8 },
+  chongTypeText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  chongCountRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  smallCounterButton: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  smallCounterValue: { fontSize: 16, fontWeight: 'bold', minWidth: 30, textAlign: 'center' },
+  penaltyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  penaltyLabel: { fontSize: 14, fontWeight: '600' },
+  penaltyCountRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

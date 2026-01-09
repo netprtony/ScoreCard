@@ -76,12 +76,32 @@ export const initDatabase = (): void => {
                 round_number INTEGER NOT NULL,
                 rankings TEXT NOT NULL,
                 toi_trang_winner TEXT,
+                actions TEXT,
                 penalties TEXT,
                 chat_heo_chains TEXT,
                 dut_ba_tep_players TEXT,
                 round_scores TEXT NOT NULL,
                 created_at INTEGER NOT NULL,
                 FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+            );`
+        );
+
+        // Player Actions table (NEW - for tracking all actions)
+        db.execSync(
+            `CREATE TABLE IF NOT EXISTS player_actions (
+                id TEXT PRIMARY KEY,
+                round_id TEXT NOT NULL,
+                action_type TEXT NOT NULL,
+                actor_id TEXT NOT NULL,
+                target_id TEXT,
+                heo_type TEXT,
+                heo_count INTEGER,
+                chong_types TEXT,
+                chong_counts TEXT,
+                killed_penalties TEXT,
+                dut_ba_tep_count INTEGER,
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY (round_id) REFERENCES rounds(id) ON DELETE CASCADE
             );`
         );
 
