@@ -1,0 +1,3 @@
+// Placeholder for timer sound
+// In production, replace with actual sound file
+export default null;
