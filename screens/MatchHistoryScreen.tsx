@@ -13,7 +13,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
-import { ScoreDisplay } from '../components/ScoreDisplay';
 import { Match } from '../types/models';
 import { getAllMatches, deleteMatch } from '../services/matchService';
 import i18n from '../utils/i18n';
@@ -94,8 +93,53 @@ export const MatchHistoryScreen: React.FC = () => {
   };
 
   const renderMatchCard = ({ item }: { item: Match }) => {
-    const winner = item.playerResults.find(r => r.rank === 1);
+    // Check if match has any scores
+    const hasScores = Object.keys(item.totalScores).length > 0;
+    
+    if (!hasScores) {
+      // Handle matches with no scores yet
+      return (
+        <TouchableOpacity
+          style={[styles.matchCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+          onPress={() => openMatchDetail(item)}
+        >
+          <View style={styles.matchHeader}>
+            <View style={styles.matchInfo}>
+              <Text style={[styles.matchDate, { color: theme.text }]}>
+                {formatDate(item.createdAt)}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteMatch(item)}
+            >
+              <Ionicons name="trash-outline" size={20} color={theme.error} />
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
+            Chưa có điểm số
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    // Find winner (player with highest score)
+    const winnerEntry = Object.entries(item.totalScores).reduce((max, current) => 
+      current[1] > max[1] ? current : max
+    );
+    const winnerPlayerId = winnerEntry[0];
+    const winnerScore = winnerEntry[1];
+    const winnerIndex = item.playerIds.indexOf(winnerPlayerId);
+    const winnerName = item.playerNames[winnerIndex];
+    
     const totalSum = getTotalScoreSum(item);
+
+    // Create player results for display (sorted by score descending)
+    const playerResults = item.playerIds.map((playerId, index) => ({
+      playerId,
+      playerName: item.playerNames[index],
+      score: item.totalScores[playerId]
+    })).sort((a, b) => b.score - a.score);
 
     return (
       <TouchableOpacity
@@ -107,11 +151,11 @@ export const MatchHistoryScreen: React.FC = () => {
             <Text style={[styles.matchDate, { color: theme.text }]}>
               {formatDate(item.createdAt)}
             </Text>
-            {item.duration && (
+            {item.completedAt && (
               <View style={styles.durationBadge}>
                 <Ionicons name="time-outline" size={12} color={theme.textSecondary} />
                 <Text style={[styles.durationText, { color: theme.textSecondary }]}>
-                  {formatDuration(item.duration)}
+                  {formatDuration(Math.floor((item.completedAt - item.createdAt) / 1000))}
                 </Text>
               </View>
             )}
@@ -128,17 +172,17 @@ export const MatchHistoryScreen: React.FC = () => {
         <View style={styles.winnerContainer}>
           <Ionicons name="trophy" size={20} color={theme.rank1} />
           <Text style={[styles.winnerText, { color: theme.text }]}>
-            {winner?.playerName}
+            {winnerName}
           </Text>
           <Text style={[styles.winnerScore, { color: theme.success }]}>
-            +{winner?.scoreChange.toLocaleString('vi-VN')}
+            {winnerScore > 0 ? '+' : ''}{winnerScore.toLocaleString('vi-VN')}
           </Text>
         </View>
 
         <View style={styles.playersRow}>
-          {item.playerResults.map((result, index) => (
-            <View key={index} style={styles.playerChip}>
-              <View style={[styles.rankDot, { backgroundColor: getRankColor(result.rank, theme) }]} />
+          {playerResults.map((result, index) => (
+            <View key={result.playerId} style={styles.playerChip}>
+              <View style={[styles.rankDot, { backgroundColor: getRankColor(index + 1, theme) }]} />
               <Text style={[styles.playerChipText, { color: theme.textSecondary }]} numberOfLines={1}>
                 {result.playerName}
               </Text>
@@ -228,11 +272,11 @@ export const MatchHistoryScreen: React.FC = () => {
                   </Text>
                 </View>
 
-                {selectedMatch.duration && (
+                {selectedMatch.completedAt && (
                   <View style={styles.infoRow}>
                     <Ionicons name="time-outline" size={20} color={theme.textSecondary} />
                     <Text style={[styles.infoText, { color: theme.text }]}>
-                      Thời gian: {formatDuration(selectedMatch.duration)}
+                      Thời gian: {formatDuration(Math.floor((selectedMatch.completedAt - selectedMatch.createdAt) / 1000))}
                     </Text>
                   </View>
                 )}
@@ -246,12 +290,71 @@ export const MatchHistoryScreen: React.FC = () => {
               </View>
 
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                Kết quả
+                Kết quả cuối cùng
               </Text>
 
-              {selectedMatch.playerResults.map((result, index) => (
-                <ScoreDisplay key={index} result={result} showDetails />
-              ))}
+              {/* Display final scores sorted by rank */}
+              {Object.entries(selectedMatch.totalScores)
+                .map(([playerId, score]) => {
+                  const playerIndex = selectedMatch.playerIds.indexOf(playerId);
+                  return {
+                    playerId,
+                    playerName: selectedMatch.playerNames[playerIndex],
+                    score
+                  };
+                })
+                .sort((a, b) => b.score - a.score)
+                .map((player, index) => (
+                  <View key={player.playerId} style={[styles.playerScoreCard, { backgroundColor: theme.card }]}>
+                    <View style={styles.playerScoreHeader}>
+                      <View style={styles.playerScoreRank}>
+                        <View style={[styles.rankDot, { backgroundColor: getRankColor(index + 1, theme) }]} />
+                        <Text style={[styles.playerScoreName, { color: theme.text }]}>
+                          {player.playerName}
+                        </Text>
+                      </View>
+                      <Text style={[
+                        styles.playerScoreValue,
+                        { color: player.score >= 0 ? theme.success : theme.error }
+                      ]}>
+                        {player.score > 0 ? '+' : ''}{player.score.toLocaleString('vi-VN')}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+
+              {/* Display rounds if any */}
+              {selectedMatch.rounds.length > 0 && (
+                <>
+                  <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 20 }]}>
+                    Chi tiết các ván ({selectedMatch.rounds.length} ván)
+                  </Text>
+                  {selectedMatch.rounds.map((round, roundIndex) => (
+                    <View key={round.id} style={[styles.roundCard, { backgroundColor: theme.card }]}>
+                      <Text style={[styles.roundTitle, { color: theme.text }]}>
+                        Ván {round.roundNumber}
+                      </Text>
+                      {Object.entries(round.roundScores).map(([playerId, score]) => {
+                        const playerIndex = selectedMatch.playerIds.indexOf(playerId);
+                        const playerName = selectedMatch.playerNames[playerIndex];
+                        return (
+                          <View key={playerId} style={styles.roundScoreRow}>
+                            <Text style={[styles.roundPlayerName, { color: theme.textSecondary }]}>
+                              {playerName}
+                            </Text>
+                            <Text style={[
+                              styles.roundScore,
+                              { color: score >= 0 ? theme.success : theme.error }
+                            ]}>
+                              {score > 0 ? '+' : ''}{score}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </>
+              )}
 
               <View style={[styles.configCard, { backgroundColor: theme.card }]}>
                 <Text style={[styles.configTitle, { color: theme.text }]}>
@@ -460,6 +563,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   configValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  playerScoreCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+  },
+  playerScoreHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  playerScoreRank: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  playerScoreName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  playerScoreValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  roundCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  roundTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  roundScoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  roundPlayerName: {
+    fontSize: 14,
+  },
+  roundScore: {
     fontSize: 14,
     fontWeight: '600',
   },
