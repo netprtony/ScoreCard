@@ -24,12 +24,29 @@ import {
 } from '../services/playerService';
 import i18n from '../utils/i18n';
 
+// Predefined color palette
+const PLAYER_COLORS = [
+  '#FF6B6B', // Red
+  '#4ECDC4', // Teal
+  '#45B7D1', // Blue
+  '#FFA07A', // Light Salmon
+  '#98D8C8', // Mint
+  '#F7DC6F', // Yellow
+  '#BB8FCE', // Purple
+  '#85C1E2', // Sky Blue
+  '#F8B739', // Orange
+  '#52B788', // Green
+  '#E76F51', // Coral
+  '#2A9D8F', // Dark Teal
+];
+
 export const PlayerListScreen: React.FC = () => {
   const { theme } = useTheme();
   const [players, setPlayers] = useState<Player[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [playerName, setPlayerName] = useState('');
+  const [selectedColor, setSelectedColor] = useState<string>(PLAYER_COLORS[0]);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -62,8 +79,9 @@ export const PlayerListScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await createPlayer(playerName.trim());
+      await createPlayer(playerName.trim(), selectedColor);
       setPlayerName('');
+      setSelectedColor(PLAYER_COLORS[0]);
       setShowAddModal(false);
       await loadPlayers();
     } catch (error) {
@@ -82,8 +100,9 @@ export const PlayerListScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await updatePlayer(editingPlayer.id, playerName.trim());
+      await updatePlayer(editingPlayer.id, playerName.trim(), selectedColor);
       setPlayerName('');
+      setSelectedColor(PLAYER_COLORS[0]);
       setEditingPlayer(null);
       setShowEditModal(false);
       await loadPlayers();
@@ -121,6 +140,7 @@ export const PlayerListScreen: React.FC = () => {
   const openEditModal = (player: Player) => {
     setEditingPlayer(player);
     setPlayerName(player.name);
+    setSelectedColor(player.color || PLAYER_COLORS[0]);
     setShowEditModal(true);
   };
 
@@ -196,6 +216,30 @@ export const PlayerListScreen: React.FC = () => {
               autoFocus
             />
 
+            {/* Color Picker */}
+            <View style={styles.colorPickerContainer}>
+              <Text style={[styles.colorPickerLabel, { color: theme.textSecondary }]}>
+                Chọn màu:
+              </Text>
+              <View style={styles.colorGrid}>
+                {PLAYER_COLORS.map((color) => (
+                  <TouchableOpacity
+                    key={color}
+                    style={[
+                      styles.colorOption,
+                      { backgroundColor: color },
+                      selectedColor === color && styles.colorOptionSelected,
+                    ]}
+                    onPress={() => setSelectedColor(color)}
+                  >
+                    {selectedColor === color && (
+                      <Ionicons name="checkmark" size={20} color="#FFF" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.surface }]}
@@ -251,6 +295,30 @@ export const PlayerListScreen: React.FC = () => {
               onChangeText={setPlayerName}
               autoFocus
             />
+
+            {/* Color Picker */}
+            <View style={styles.colorPickerContainer}>
+              <Text style={[styles.colorPickerLabel, { color: theme.textSecondary }]}>
+                Chọn màu:
+              </Text>
+              <View style={styles.colorGrid}>
+                {PLAYER_COLORS.map((color) => (
+                  <TouchableOpacity
+                    key={color}
+                    style={[
+                      styles.colorOption,
+                      { backgroundColor: color },
+                      selectedColor === color && styles.colorOptionSelected,
+                    ]}
+                    onPress={() => setSelectedColor(color)}
+                  >
+                    {selectedColor === color && (
+                      <Ionicons name="checkmark" size={20} color="#FFF" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -368,5 +436,35 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  colorPickerContainer: {
+    marginBottom: 16,
+  },
+  colorPickerLabel: {
+    fontSize: 14,
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  colorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  colorOption: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  colorOptionSelected: {
+    borderColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useMatch } from '../contexts/MatchContext';
-import { PlayerAction, PlayerActionType, PenaltyType, ChatHeoType } from '../types/models';
+import { Player, PlayerAction, PlayerActionType, PenaltyType, ChatHeoType } from '../types/models';
+import { getPlayerById } from '../services/playerService';
 import { calculateRoundScores, validateScores } from '../utils/scoringEngine';
 import i18n from '../utils/i18n';
 
@@ -27,6 +28,7 @@ export const RoundInputScreen: React.FC = () => {
   const [rankings, setRankings] = useState<{ [playerId: string]: 1 | 2 | 3 | 4 | undefined }>({});
   const [toiTrangWinner, setToiTrangWinner] = useState<string | undefined>();
   const [actions, setActions] = useState<PlayerAction[]>([]);
+  const [players, setPlayers] = useState<{ [playerId: string]: Player }>({});
   
   // Penalty Modal State
   const [showPenaltyModal, setShowPenaltyModal] = useState(false);
@@ -47,6 +49,23 @@ export const RoundInputScreen: React.FC = () => {
   // Giết state
   const [gietTarget, setGietTarget] = useState<string | null>(null);
   const [gietPenalties, setGietPenalties] = useState<{ type: PenaltyType; count: number }[]>([]);
+
+  // Load player data for colors
+  useEffect(() => {
+    if (activeMatch) {
+      const loadPlayers = async () => {
+        const playerData: { [playerId: string]: Player } = {};
+        for (const playerId of activeMatch.playerIds) {
+          const player = getPlayerById(playerId);
+          if (player) {
+            playerData[playerId] = player;
+          }
+        }
+        setPlayers(playerData);
+      };
+      loadPlayers();
+    }
+  }, [activeMatch]);
 
   if (!activeMatch) {
     return (
@@ -321,14 +340,16 @@ export const RoundInputScreen: React.FC = () => {
           const playerName = activeMatch.playerNames[index];
           const rank = rankings[playerId];
           const playerActions = getPlayerActions(playerId);
+          const player = players[playerId];
+          const playerColor = player?.color || theme.primary;
 
           return (
             <View key={playerId} style={[styles.playerCard, { backgroundColor: theme.card }]}>
               <View style={styles.playerHeader}>
-                <View style={[styles.playerAvatar, { backgroundColor: theme.primary }]}>
+                <View style={[styles.playerAvatar, { backgroundColor: playerColor }]}>
                   <Text style={styles.playerAvatarText}>{playerName.charAt(0).toUpperCase()}</Text>
                 </View>
-                <Text style={[styles.playerName, { color: theme.text }]}>{playerName}</Text>
+                <Text style={[styles.playerName, { color: playerColor }]}>{playerName}</Text>
                 {playerActions.length > 0 && (
                   <View style={[styles.actionBadge, { backgroundColor: theme.error }]}>
                     <Text style={styles.actionBadgeText}>{playerActions.length}</Text>

@@ -258,7 +258,7 @@ export const NewMatchScreen: React.FC = () => {
           </Text>
           <View style={styles.selectedPlayers}>
             {selectedPlayers.map((player, index) => (
-              <View key={player.id} style={[styles.selectedChip, { backgroundColor: theme.primary }]}>
+              <View key={player.id} style={[styles.selectedChip, { backgroundColor: player.color || theme.primary }]}>
                 <Text style={styles.selectedChipText}>{player.name}</Text>
               </View>
             ))}

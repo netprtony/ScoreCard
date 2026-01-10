@@ -9,6 +9,7 @@ export const getAllPlayers = (): Player[] => {
     return rows.map(row => ({
         id: row.id,
         name: row.name,
+        color: row.color,
         createdAt: row.created_at
     }));
 };
@@ -25,29 +26,31 @@ export const getPlayerById = (id: string): Player | null => {
     return {
         id: row.id,
         name: row.name,
+        color: row.color,
         createdAt: row.created_at
     };
 };
 
-export const createPlayer = (name: string): Player => {
+export const createPlayer = (name: string, color?: string): Player => {
     const player: Player = {
         id: `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name,
+        color,
         createdAt: Date.now()
     };
 
     executeUpdate(
-        'INSERT INTO players (id, name, created_at) VALUES (?, ?, ?)',
-        [player.id, player.name, player.createdAt]
+        'INSERT INTO players (id, name, color, created_at) VALUES (?, ?, ?, ?)',
+        [player.id, player.name, player.color || null, player.createdAt]
     );
 
     return player;
 };
 
-export const updatePlayer = (id: string, name: string): void => {
+export const updatePlayer = (id: string, name: string, color?: string): void => {
     executeUpdate(
-        'UPDATE players SET name = ? WHERE id = ?',
-        [name, id]
+        'UPDATE players SET name = ?, color = ? WHERE id = ?',
+        [name, color || null, id]
     );
 };
 

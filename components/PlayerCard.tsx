@@ -22,28 +22,29 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
   showActions = true,
 }) => {
   const { theme } = useTheme();
+  const playerColor = player.color || theme.primary;
 
   return (
     <TouchableOpacity
       style={[
         styles.container,
         {
-          backgroundColor: selected ? theme.primary + '20' : theme.card,
-          borderColor: selected ? theme.primary : theme.border,
+          backgroundColor: selected ? playerColor + '20' : theme.card,
+          borderColor: selected ? playerColor : theme.border,
         },
       ]}
       onPress={onPress}
       disabled={!onPress}
     >
       <View style={styles.content}>
-        <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+        <View style={[styles.avatar, { backgroundColor: playerColor }]}>
           <Text style={styles.avatarText}>
             {player.name.charAt(0).toUpperCase()}
           </Text>
         </View>
 
         <View style={styles.info}>
-          <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
+          <Text style={[styles.name, { color: playerColor }]} numberOfLines={1}>
             {player.name}
           </Text>
         </View>
@@ -71,7 +72,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
         )}
 
         {selected && (
-          <Ionicons name="checkmark-circle" size={24} color={theme.primary} />
+          <Ionicons name="checkmark-circle" size={24} color={playerColor} />
         )}
       </View>
     </TouchableOpacity>

@@ -2,6 +2,7 @@
 export interface Player {
     id: string;
     name: string;
+    color?: string; // Custom color for avatar and name (hex format)
     createdAt: number;
 }
 

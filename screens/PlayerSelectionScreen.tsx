@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  ScrollView,
   Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -94,7 +95,11 @@ export const PlayerSelectionScreen: React.FC = () => {
         </View>
       </View>
 
-      <View style={styles.list}>
+      <ScrollView 
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={true}
+      >
         {players.map(player => (
           <PlayerCard
             key={player.id}
@@ -104,7 +109,7 @@ export const PlayerSelectionScreen: React.FC = () => {
             showActions={false}
           />
         ))}
-      </View>
+      </ScrollView>
 
       <TouchableOpacity
         style={[
@@ -168,8 +173,11 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
     paddingTop: 8,
+  },
+  listContent: {
+    paddingBottom: 80,
   },
   fab: {
     position: 'absolute',

@@ -253,6 +253,25 @@ export const initDatabase = (): void => {
             console.error('Rounds table migration error:', migrationError);
             // Don't throw - allow app to continue if migration fails
         }
+
+        // Migration: Add color column to players table if it doesn't exist
+        try {
+            const playersTableInfo = db.getAllSync<{ name: string }>('PRAGMA table_info(players)');
+            const playersColumnNames = playersTableInfo.map(col => col.name);
+
+            console.log('Current players table columns:', playersColumnNames);
+
+            // Add color column if missing
+            if (!playersColumnNames.includes('color')) {
+                console.log('Migrating players table: adding color column');
+                db.execSync('ALTER TABLE players ADD COLUMN color TEXT');
+            }
+
+            console.log('Players table migration completed successfully');
+        } catch (migrationError) {
+            console.error('Players table migration error:', migrationError);
+            // Don't throw - allow app to continue if migration fails
+        }
     } catch (error) {
         console.error('Database initialization error:', error);
         throw error;
