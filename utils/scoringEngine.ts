@@ -1,262 +1,273 @@
-import { ScoringConfig, MatchPlayerResult } from '../types/models';
+import { ScoringConfig, PlayerAction, Round, PenaltyType, ChatHeoType } from '../types/models';
 
-/**
- * Calculate base ranking scores
- * First place takes from Last place
- * Second place takes from Third place
- */
-function calculateBaseScores(
-    results: MatchPlayerResult[],
-    config: ScoringConfig
-): Map<string, number> {
-    const scores = new Map<string, number>();
-
-    // Sort by rank
-    const sorted = [...results].sort((a, b) => a.rank - b.rank);
-    const [first, second, third, fourth] = sorted;
-
-    // Initialize all scores to 0
-    results.forEach(r => scores.set(r.playerId, 0));
-
-    // Check for Tới Trắng (special case)
-    if (config.enableToiTrang && first.isToiTrang) {
-        // Winner gets baseRatioFirst × toiTrangMultiplier
-        const winnerPoints = config.baseRatioFirst * config.toiTrangMultiplier;
-        scores.set(first.playerId, winnerPoints);
-
-        // ALL other players lose the same amount
-        scores.set(second.playerId, -winnerPoints);
-        scores.set(third.playerId, -winnerPoints);
-        scores.set(fourth.playerId, -winnerPoints);
-
-        return scores; // No other rules apply for Tới Trắng
-    }
-
-    // Normal scoring
-    // First vs Fourth
-    scores.set(first.playerId, config.baseRatioFirst);
-    scores.set(fourth.playerId, -config.baseRatioFirst);
-
-    // Second vs Third
-    scores.set(second.playerId, config.baseRatioSecond);
-    scores.set(third.playerId, -config.baseRatioSecond);
-
-    return scores;
+interface ScoringResult {
+    roundScores: { [playerId: string]: number };
+    breakdown: {
+        playerId: string;
+        baseScore: number;
+        heoScore: number;
+        chongScore: number;
+        gietScore: number;
+        dutBaTepScore: number;
+        totalScore: number;
+    }[];
 }
 
 /**
- * Calculate penalty points for a player
+ * Calculate scores for a round based on rankings and actions
  */
-function calculatePenalties(
-    result: MatchPlayerResult,
+export const calculateRoundScores = (
+    playerIds: string[],
+    rankings: { playerId: string; rank: 1 | 2 | 3 | 4 }[],
+    toiTrangWinner: string | undefined,
+    actions: PlayerAction[],
     config: ScoringConfig
-): number {
-    if (!config.enablePenalties) return 0;
+): ScoringResult => {
+    // Initialize scores
+    const scores: { [playerId: string]: number } = {};
+    const breakdown = playerIds.map(id => ({
+        playerId: id,
+        baseScore: 0,
+        heoScore: 0,
+        chongScore: 0,
+        gietScore: 0,
+        dutBaTepScore: 0,
+        totalScore: 0,
+    }));
 
-    let total = 0;
+    playerIds.forEach(id => scores[id] = 0);
 
-    for (const penalty of result.penalties) {
-        let value = 0;
-        switch (penalty.type) {
-            case 'heo_den':
-                value = config.penaltyHeoDen;
-                break;
-            case 'heo_do':
-                value = config.penaltyHeoDo;
-                break;
-            case 'ba_tep':
-                value = config.penaltyBaTep;
-                break;
-            case 'ba_doi_thong':
-                value = config.penaltyBaDoiThong;
-                break;
-            case 'tu_quy':
-                value = config.penaltyTuQuy;
-                break;
-        }
-        total += value * penalty.count;
+    // 1. Tới Trắng - overrides everything
+    if (toiTrangWinner && config.enableToiTrang) {
+        const winnerScore = config.baseRatioFirst * config.toiTrangMultiplier;
+        playerIds.forEach(id => {
+            const score = id === toiTrangWinner ? winnerScore * 3 : -winnerScore;
+            scores[id] = score;
+            const player = breakdown.find(p => p.playerId === id);
+            if (player) {
+                player.baseScore = score;
+                player.totalScore = score;
+            }
+        });
+        return { roundScores: scores, breakdown };
     }
 
-    return total;
-}
+    // 2. Base scores from rankings
+    const sorted = [...rankings].sort((a, b) => a.rank - b.rank);
+    scores[sorted[0].playerId] = config.baseRatioFirst;
+    scores[sorted[1].playerId] = config.baseRatioSecond;
+    scores[sorted[2].playerId] = -config.baseRatioSecond;
+    scores[sorted[3].playerId] = -config.baseRatioFirst;
 
-/**
- * Apply penalty rules
- * Default: penalties go to third place
- * Special: if killed, penalties go to killer
- */
-function applyPenalties(
-    results: MatchPlayerResult[],
-    config: ScoringConfig,
-    scores: Map<string, number>
-): void {
-    if (!config.enablePenalties) return;
+    breakdown.forEach(player => {
+        player.baseScore = scores[player.playerId];
+    });
 
-    const sorted = [...results].sort((a, b) => a.rank - b.rank);
-    const thirdPlace = sorted[2];
+    // 3. Process Heo actions
+    if (config.enablePenalties) {
+        const heoActions = actions.filter(a => a.actionType === 'heo');
+        heoActions.forEach(action => {
+            if (!action.targetId || !action.heoType || !action.heoCount) return;
 
-    for (const result of results) {
-        const penaltyAmount = calculatePenalties(result, config);
+            const points = action.heoType === 'den' ? config.penaltyHeoDen : config.penaltyHeoDo;
+            const totalPenalty = points * action.heoCount;
 
-        if (penaltyAmount > 0) {
-            // Player loses penalty points
-            const currentScore = scores.get(result.playerId) || 0;
-            scores.set(result.playerId, currentScore - penaltyAmount);
+            // Target loses points
+            scores[action.targetId] -= totalPenalty;
+            const targetPlayer = breakdown.find(p => p.playerId === action.targetId);
+            if (targetPlayer) targetPlayer.heoScore -= totalPenalty;
 
-            // Determine who receives the penalty points
-            if (config.enableKill && result.isKilled && result.killedBy) {
-                // Killer receives penalty points
-                const killerScore = scores.get(result.killedBy) || 0;
-                scores.set(result.killedBy, killerScore + penaltyAmount);
+            // Actor gains points (or 3rd place if actor is target)
+            const beneficiary = action.actorId;
+            scores[beneficiary] += totalPenalty;
+            const beneficiaryPlayer = breakdown.find(p => p.playerId === beneficiary);
+            if (beneficiaryPlayer) beneficiaryPlayer.heoScore += totalPenalty;
+        });
+    }
+
+    // 4. Process Chồng actions
+    if (config.enableChatHeo) {
+        const chongActions = actions.filter(a => a.actionType === 'chong');
+        chongActions.forEach(action => {
+            if (!action.targetId || !action.chongTypes || !action.chongCounts) return;
+
+            let totalPenalty = 0;
+            action.chongTypes.forEach(type => {
+                const count = action.chongCounts![type] || 1;
+                let points = 0;
+
+                switch (type) {
+                    case 'heo_den':
+                        points = config.chatHeoBlack;
+                        break;
+                    case 'heo_do':
+                        points = config.chatHeoRed;
+                        break;
+                    case 'tu_quy':
+                        points = config.penaltyTuQuy;
+                        break;
+                    case 'ba_doi_thong':
+                        points = config.penaltyBaDoiThong;
+                        break;
+                }
+
+                totalPenalty += points * count * config.chongHeoMultiplier;
+            });
+
+            // Target loses points
+            scores[action.targetId] -= totalPenalty;
+            const targetPlayer = breakdown.find(p => p.playerId === action.targetId);
+            if (targetPlayer) targetPlayer.chongScore -= totalPenalty;
+
+            // Actor gains points
+            scores[action.actorId] += totalPenalty;
+            const actorPlayer = breakdown.find(p => p.playerId === action.actorId);
+            if (actorPlayer) actorPlayer.chongScore += totalPenalty;
+        });
+    }
+
+    // 5. Process Giết actions
+    if (config.enableKill) {
+        const gietActions = actions.filter(a => a.actionType === 'giet');
+
+        if (gietActions.length > 0) {
+            // Collect all killed players
+            const killedPlayerIds = new Set(gietActions.map(a => a.targetId).filter(Boolean));
+            const killCount = killedPlayerIds.size;
+            const killer = gietActions[0].actorId; // Assume same killer for all
+
+            // Calculate total kill score
+            let totalKillScore = 0;
+            const victimScores: { [playerId: string]: number } = {};
+
+            gietActions.forEach(action => {
+                if (!action.targetId) return;
+
+                // Base kill score per victim
+                const baseKillScore = config.baseRatioFirst * config.killMultiplier;
+                let killScore = baseKillScore;
+
+                // Add penalties for this victim
+                if (config.enablePenalties && action.killedPenalties) {
+                    action.killedPenalties.forEach(penalty => {
+                        let points = 0;
+                        switch (penalty.type) {
+                            case 'heo_den': points = config.penaltyHeoDen; break;
+                            case 'heo_do': points = config.penaltyHeoDo; break;
+                            case 'ba_tep': points = config.penaltyBaTep; break;
+                            case 'ba_doi_thong': points = config.penaltyBaDoiThong; break;
+                            case 'tu_quy': points = config.penaltyTuQuy; break;
+                        }
+                        killScore += points * penalty.count;
+                    });
+                }
+
+                totalKillScore += killScore;
+                victimScores[action.targetId] = (victimScores[action.targetId] || 0) - killScore;
+            });
+
+            // Handle Case 2: Double kill (1v2)
+            if (killCount === 2) {
+                // Find the neutral player (not killer, not victims)
+                const neutralPlayer = playerIds.find(id =>
+                    id !== killer && !killedPlayerIds.has(id)
+                );
+
+                if (neutralPlayer) {
+                    // In double kill:
+                    // - Killer: Remove base score, only gets kill scores
+                    // - Victims: Remove base scores, only lose kill penalties
+                    // - Neutral: Set to 0
+
+                    // Remove base score from killer
+                    const killerPlayer = breakdown.find(p => p.playerId === killer);
+                    if (killerPlayer) {
+                        const killerBaseScore = killerPlayer.baseScore;
+                        scores[killer] -= killerBaseScore;
+                        killerPlayer.baseScore = 0;
+                    }
+
+                    // Remove base scores from victims (they're rank 4 but killed)
+                    killedPlayerIds.forEach(victimId => {
+                        const victimPlayer = breakdown.find(p => p.playerId === victimId);
+                        if (victimPlayer) {
+                            // Remove the base score that was applied earlier
+                            const victimBaseScore = victimPlayer.baseScore;
+                            scores[victimId] -= victimBaseScore;
+                            victimPlayer.baseScore = 0;
+                        }
+                    });
+
+                    // Set neutral player to 0
+                    const neutralBaseScore = scores[neutralPlayer];
+                    scores[neutralPlayer] = 0;
+
+                    const neutralPlayerBreakdown = breakdown.find(p => p.playerId === neutralPlayer);
+                    if (neutralPlayerBreakdown) {
+                        neutralPlayerBreakdown.baseScore = 0;
+                        neutralPlayerBreakdown.totalScore = 0;
+                    }
+
+                    // Now apply kill scores
+                    scores[killer] += totalKillScore;
+                    if (killerPlayer) killerPlayer.gietScore += totalKillScore;
+
+                    // Victims lose their respective kill amounts
+                    Object.entries(victimScores).forEach(([victimId, score]) => {
+                        scores[victimId] += score;
+                        const victimPlayer = breakdown.find(p => p.playerId === victimId);
+                        if (victimPlayer) victimPlayer.gietScore += score;
+                    });
+                }
             } else {
-                // Third place receives penalty points
-                const thirdScore = scores.get(thirdPlace.playerId) || 0;
-                scores.set(thirdPlace.playerId, thirdScore + penaltyAmount);
+                // Case 1: Single kill (1v1) - normal scoring
+                // Killer gains total
+                scores[killer] += totalKillScore;
+                const killerPlayer = breakdown.find(p => p.playerId === killer);
+                if (killerPlayer) killerPlayer.gietScore += totalKillScore;
+
+                // Victims lose their respective amounts
+                Object.entries(victimScores).forEach(([victimId, score]) => {
+                    scores[victimId] += score;
+                    const victimPlayer = breakdown.find(p => p.playerId === victimId);
+                    if (victimPlayer) victimPlayer.gietScore += score;
+                });
             }
         }
     }
-}
+
+    // 6. Process Đút 3 Tép actions
+    if (config.enableDutBaTep) {
+        const dutBaTepActions = actions.filter(a => a.actionType === 'dut_ba_tep');
+        dutBaTepActions.forEach(action => {
+            const count = action.dutBaTepCount || 1;
+            const totalPoints = config.dutBaTep * count;
+
+            // Actor loses points
+            scores[action.actorId] -= totalPoints;
+            const actorPlayer = breakdown.find(p => p.playerId === action.actorId);
+            if (actorPlayer) actorPlayer.dutBaTepScore -= totalPoints;
+
+            // Winner (rank 1) gains points
+            const winner = sorted[0].playerId;
+            scores[winner] += totalPoints;
+            const winnerPlayer = breakdown.find(p => p.playerId === winner);
+            if (winnerPlayer) winnerPlayer.dutBaTepScore += totalPoints;
+        });
+    }
+
+    // Update total scores in breakdown
+    breakdown.forEach(player => {
+        player.totalScore = scores[player.playerId];
+    });
+
+    return { roundScores: scores, breakdown };
+};
 
 /**
- * Apply kill (Giết) rules
- * Killed player: base loss × killMultiplier, then add penalties separately
- * Killer receives all lost points
+ * Validate that round scores sum to zero
  */
-function applyKillRules(
-    results: MatchPlayerResult[],
-    config: ScoringConfig,
-    scores: Map<string, number>
-): void {
-    if (!config.enableKill) return;
-
-    for (const result of results) {
-        if (result.isKilled && result.killedBy) {
-            const currentScore = scores.get(result.playerId) || 0;
-            const penaltyAmount = calculatePenalties(result, config);
-
-            // Separate base score from penalties
-            const baseScore = currentScore + penaltyAmount; // Remove penalties temporarily
-
-            // Apply kill multiplier to base score only
-            const killedBaseScore = baseScore * config.killMultiplier;
-
-            // Add penalties back (not multiplied)
-            const totalKilledScore = killedBaseScore - penaltyAmount;
-
-            scores.set(result.playerId, totalKilledScore);
-
-            // Killer gains the difference
-            const killerScore = scores.get(result.killedBy) || 0;
-            const gainedPoints = currentScore - totalKilledScore;
-            scores.set(result.killedBy, killerScore + gainedPoints);
-        }
-    }
-}
-
-/**
- * Apply Chặt heo rules
- */
-function applyChatHeo(
-    results: MatchPlayerResult[],
-    config: ScoringConfig,
-    scores: Map<string, number>
-): void {
-    if (!config.enableChatHeo) return;
-
-    for (const result of results) {
-        if (result.chatHeo && result.chatHeo.choppedBy) {
-            const value = result.chatHeo.type === 'black'
-                ? config.chatHeoBlack
-                : config.chatHeoRed;
-
-            const totalValue = value * result.chatHeo.count * result.chatHeo.chongMultiplier;
-
-            // This player loses points (was chopped)
-            const currentScore = scores.get(result.playerId) || 0;
-            scores.set(result.playerId, currentScore - totalValue);
-
-            // Chopper gains points
-            const chopperScore = scores.get(result.chatHeo.choppedBy) || 0;
-            scores.set(result.chatHeo.choppedBy, chopperScore + totalValue);
-        }
-    }
-}
-
-/**
- * Apply Đút 3 tép rule
- * Penalized player loses points
- * First place gains points
- */
-function applyDutBaTep(
-    results: MatchPlayerResult[],
-    config: ScoringConfig,
-    scores: Map<string, number>
-): void {
-    if (!config.enableDutBaTep) return;
-
-    const sorted = [...results].sort((a, b) => a.rank - b.rank);
-    const firstPlace = sorted[0];
-
-    for (const result of results) {
-        if (result.dutBaTep) {
-            const currentScore = scores.get(result.playerId) || 0;
-            scores.set(result.playerId, currentScore - config.dutBaTep);
-
-            const firstScore = scores.get(firstPlace.playerId) || 0;
-            scores.set(firstPlace.playerId, firstScore + config.dutBaTep);
-        }
-    }
-}
-
-/**
- * Main scoring calculation function
- * Applies all rules in correct order
- */
-export function calculateMatchScores(
-    results: MatchPlayerResult[],
-    config: ScoringConfig
-): Map<string, number> {
-    // Initialize scores with base ranking
-    const scores = calculateBaseScores(results, config);
-
-    // If Tới Trắng, no other rules apply
-    const sorted = [...results].sort((a, b) => a.rank - b.rank);
-    if (config.enableToiTrang && sorted[0].isToiTrang) {
-        return scores;
-    }
-
-    // Apply penalties (must be before kill rules)
-    applyPenalties(results, config, scores);
-
-    // Apply kill rules (after penalties)
-    applyKillRules(results, config, scores);
-
-    // Apply Chặt heo
-    applyChatHeo(results, config, scores);
-
-    // Apply Đút 3 tép
-    applyDutBaTep(results, config, scores);
-
-    return scores;
-}
-
-/**
- * Validate scoring configuration
- */
-export function validateScoringConfig(config: Partial<ScoringConfig>): string[] {
-    const errors: string[] = [];
-
-    if (config.baseRatioFirst !== undefined &&
-        config.baseRatioSecond !== undefined &&
-        config.baseRatioFirst <= config.baseRatioSecond) {
-        errors.push('Hệ số 1 phải lớn hơn hệ số 2');
-    }
-
-    if (config.penaltyHeoDo !== undefined &&
-        config.penaltyHeoDen !== undefined &&
-        config.penaltyHeoDo <= config.penaltyHeoDen) {
-        errors.push('Phạt heo đỏ phải lớn hơn phạt heo đen');
-    }
-
-    return errors;
-}
+export const validateScores = (scores: { [playerId: string]: number }): boolean => {
+    const total = Object.values(scores).reduce((sum, score) => sum + score, 0);
+    return Math.abs(total) < 0.01; // Allow small floating point errors
+};

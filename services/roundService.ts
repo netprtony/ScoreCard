@@ -11,15 +11,16 @@ export const createRound = (round: Omit<Round, 'id' | 'createdAt'>): Round => {
     executeUpdate(
         `INSERT INTO rounds (
             id, match_id, round_number, rankings,
-            toi_trang_winner, penalties, chat_heo_chains,
+            toi_trang_winner, actions, penalties, chat_heo_chains,
             dut_ba_tep_players, round_scores, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
             newRound.id,
             newRound.matchId,
             newRound.roundNumber,
             JSON.stringify(newRound.rankings),
             newRound.toiTrangWinner || null,
+            JSON.stringify(newRound.actions),
             JSON.stringify(newRound.penalties),
             JSON.stringify(newRound.chatHeoChains),
             JSON.stringify(newRound.dutBaTepPlayers),
@@ -43,6 +44,7 @@ export const getRoundsByMatchId = (matchId: string): Round[] => {
         roundNumber: row.round_number,
         rankings: JSON.parse(row.rankings),
         toiTrangWinner: row.toi_trang_winner || undefined,
+        actions: JSON.parse(row.actions || '[]'),
         penalties: JSON.parse(row.penalties || '[]'),
         chatHeoChains: JSON.parse(row.chat_heo_chains || '[]'),
         dutBaTepPlayers: JSON.parse(row.dut_ba_tep_players || '[]'),
@@ -66,6 +68,7 @@ export const getRoundById = (id: string): Round | null => {
         roundNumber: row.round_number,
         rankings: JSON.parse(row.rankings),
         toiTrangWinner: row.toi_trang_winner || undefined,
+        actions: JSON.parse(row.actions || '[]'),
         penalties: JSON.parse(row.penalties || '[]'),
         chatHeoChains: JSON.parse(row.chat_heo_chains || '[]'),
         dutBaTepPlayers: JSON.parse(row.dut_ba_tep_players || '[]'),

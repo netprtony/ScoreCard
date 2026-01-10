@@ -151,13 +151,13 @@ export const initDatabase = (): void => {
         db.runSync(
             `INSERT OR IGNORE INTO game_types (id, name, icon, is_active, description)
             VALUES (?, ?, ?, ?, ?);`,
-            ['phom', 'Phỏm', '🃏', 0, 'Sắp ra mắt']
+            ['poker', 'Poker', '🃏', 0, 'Trò chơi bài Poker truyền thống']
         );
 
         db.runSync(
             `INSERT OR IGNORE INTO game_types (id, name, icon, is_active, description)
             VALUES (?, ?, ?, ?, ?);`,
-            ['xi_dach', 'Xì Dách', '🎲', 0, 'Sắp ra mắt']
+            ['sac_te', 'Sắc Tê', '🎲', 0, 'Trò chơi bài Sắc Tê truyền thống']
         );
 
         // Insert default scoring config if not exists
@@ -187,50 +187,70 @@ export const initDatabase = (): void => {
         // Migration: Add missing columns to matches table if they don't exist
         try {
             // Check if matches table exists and what columns it has
-            const tableInfo = db.getAllSync<{ name: string }>('PRAGMA table_info(matches)');
-            const columnNames = tableInfo.map(col => col.name);
+            const matchesTableInfo = db.getAllSync<{ name: string }>('PRAGMA table_info(matches)');
+            const matchesColumnNames = matchesTableInfo.map(col => col.name);
 
-            console.log('Current matches table columns:', columnNames);
+            console.log('Current matches table columns:', matchesColumnNames);
 
             // Add game_type column if missing
-            if (!columnNames.includes('game_type')) {
+            if (!matchesColumnNames.includes('game_type')) {
                 console.log('Migrating matches table: adding game_type column');
                 db.execSync('ALTER TABLE matches ADD COLUMN game_type TEXT NOT NULL DEFAULT "tien_len"');
             }
 
             // Add player_ids column if missing
-            if (!columnNames.includes('player_ids')) {
+            if (!matchesColumnNames.includes('player_ids')) {
                 console.log('Migrating matches table: adding player_ids column');
                 db.execSync('ALTER TABLE matches ADD COLUMN player_ids TEXT NOT NULL DEFAULT "[]"');
             }
 
             // Add player_names column if missing
-            if (!columnNames.includes('player_names')) {
+            if (!matchesColumnNames.includes('player_names')) {
                 console.log('Migrating matches table: adding player_names column');
                 db.execSync('ALTER TABLE matches ADD COLUMN player_names TEXT NOT NULL DEFAULT "[]"');
             }
 
             // Add total_scores column if missing
-            if (!columnNames.includes('total_scores')) {
+            if (!matchesColumnNames.includes('total_scores')) {
                 console.log('Migrating matches table: adding total_scores column');
                 db.execSync('ALTER TABLE matches ADD COLUMN total_scores TEXT NOT NULL DEFAULT "{}"');
             }
 
             // Add status column if missing
-            if (!columnNames.includes('status')) {
+            if (!matchesColumnNames.includes('status')) {
                 console.log('Migrating matches table: adding status column');
                 db.execSync('ALTER TABLE matches ADD COLUMN status TEXT NOT NULL DEFAULT "completed"');
             }
 
             // Add completed_at column if missing
-            if (!columnNames.includes('completed_at')) {
+            if (!matchesColumnNames.includes('completed_at')) {
                 console.log('Migrating matches table: adding completed_at column');
                 db.execSync('ALTER TABLE matches ADD COLUMN completed_at INTEGER');
             }
 
-            console.log('Database migration completed successfully');
+            console.log('Matches table migration completed successfully');
         } catch (migrationError) {
-            console.error('Migration error:', migrationError);
+            console.error('Matches table migration error:', migrationError);
+            // Don't throw - allow app to continue if migration fails
+        }
+
+        // Migration: Add missing columns to rounds table if they don't exist
+        try {
+            // Check if rounds table exists and what columns it has
+            const roundsTableInfo = db.getAllSync<{ name: string }>('PRAGMA table_info(rounds)');
+            const roundsColumnNames = roundsTableInfo.map(col => col.name);
+
+            console.log('Current rounds table columns:', roundsColumnNames);
+
+            // Add actions column if missing
+            if (!roundsColumnNames.includes('actions')) {
+                console.log('Migrating rounds table: adding actions column');
+                db.execSync('ALTER TABLE rounds ADD COLUMN actions TEXT DEFAULT "[]"');
+            }
+
+            console.log('Rounds table migration completed successfully');
+        } catch (migrationError) {
+            console.error('Rounds table migration error:', migrationError);
             // Don't throw - allow app to continue if migration fails
         }
     } catch (error) {
@@ -261,6 +281,10 @@ export const executeUpdate = (
         console.error('Update execution error:', error);
         throw error;
     }
+};
+
+export const getDatabase = async () => {
+    return db;
 };
 
 export default db;

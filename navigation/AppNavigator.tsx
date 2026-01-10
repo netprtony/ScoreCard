@@ -10,6 +10,7 @@ import { PlayerSelectionScreen } from '../screens/PlayerSelectionScreen';
 import { ConfigSetupScreen } from '../screens/ConfigSetupScreen';
 import { ActiveMatchScreen } from '../screens/ActiveMatchScreen';
 import { RoundInputScreen } from '../screens/RoundInputScreen';
+import { RoundDetailsScreen } from '../screens/RoundDetailsScreen';
 import { MatchHistoryScreen } from '../screens/MatchHistoryScreen';
 import { StatisticsScreen } from '../screens/StatisticsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -27,6 +28,7 @@ const MatchStack: React.FC = () => {
       <Stack.Screen name="PlayerSelection" component={PlayerSelectionScreen} />
       <Stack.Screen name="ConfigSetup" component={ConfigSetupScreen} />
       <Stack.Screen name="RoundInput" component={RoundInputScreen} />
+      <Stack.Screen name="RoundDetails" component={RoundDetailsScreen} />
     </Stack.Navigator>
   );
 };

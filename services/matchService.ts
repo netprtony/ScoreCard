@@ -1,5 +1,5 @@
 import { Match, Round, ScoringConfig } from '../types/models';
-import { executeQuery, executeUpdate } from './database';
+import { executeQuery, executeUpdate, getDatabase } from './database';
 import { getRoundsByMatchId, deleteRoundsByMatchId } from './roundService';
 
 // Create a new match (multi-round)
@@ -171,4 +171,92 @@ export const getMatchesByPlayerId = (playerId: string): Match[] => {
             completedAt: row.completed_at || undefined
         };
     });
+};
+
+/**
+ * Update scores for a specific round
+ */
+export const updateRoundScores = async (
+    matchId: string,
+    roundId: string,
+    newScores: { [playerId: string]: number }
+): Promise<void> => {
+    const db = await getDatabase();
+
+    try {
+        // Update round scores in database
+        await db.runAsync(
+            'UPDATE rounds SET round_scores = ? WHERE id = ?',
+            [JSON.stringify(newScores), roundId]
+        );
+
+        // Recalculate total scores for the match
+        const rounds = await db.getAllAsync<any>(
+            'SELECT * FROM rounds WHERE match_id = ? ORDER BY round_number ASC',
+            [matchId]
+        );
+
+        const totalScores: { [playerId: string]: number } = {};
+
+        rounds.forEach((round: any) => {
+            const roundScores = JSON.parse(round.round_scores);
+            Object.entries(roundScores).forEach(([playerId, score]) => {
+                totalScores[playerId] = (totalScores[playerId] || 0) + (score as number);
+            });
+        });
+
+        // Update match total scores
+        await db.runAsync(
+            'UPDATE matches SET total_scores = ? WHERE id = ?',
+            [JSON.stringify(totalScores), matchId]
+        );
+    } catch (error) {
+        console.error('Error updating round scores:', error);
+        throw error;
+    }
+};
+
+/**
+ * Delete a round from a match
+ */
+export const deleteRound = async (matchId: string, roundId: string): Promise<void> => {
+    const db = await getDatabase();
+
+    try {
+        // Delete the round
+        await db.runAsync('DELETE FROM rounds WHERE id = ?', [roundId]);
+
+        // Get remaining rounds
+        const rounds = await db.getAllAsync<any>(
+            'SELECT * FROM rounds WHERE match_id = ? ORDER BY round_number ASC',
+            [matchId]
+        );
+
+        // Renumber rounds
+        for (let i = 0; i < rounds.length; i++) {
+            await db.runAsync(
+                'UPDATE rounds SET round_number = ? WHERE id = ?',
+                [i + 1, rounds[i].id]
+            );
+        }
+
+        // Recalculate total scores
+        const totalScores: { [playerId: string]: number } = {};
+
+        rounds.forEach((round: any) => {
+            const roundScores = JSON.parse(round.round_scores);
+            Object.entries(roundScores).forEach(([playerId, score]) => {
+                totalScores[playerId] = (totalScores[playerId] || 0) + (score as number);
+            });
+        });
+
+        // Update match total scores
+        await db.runAsync(
+            'UPDATE matches SET total_scores = ? WHERE id = ?',
+            [JSON.stringify(totalScores), matchId]
+        );
+    } catch (error) {
+        console.error('Error deleting round:', error);
+        throw error;
+    }
 };

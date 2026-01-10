@@ -8,16 +8,20 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { PlayerCard } from '../components/PlayerCard';
 import { Player, GameType } from '../types/models';
+import { MatchStackParamList } from '../types/navigation';
 import { getAllPlayers } from '../services/playerService';
 import i18n from '../utils/i18n';
 
+type PlayerSelectionNavigationProp = NativeStackNavigationProp<MatchStackParamList, 'PlayerSelection'>;
+
 export const PlayerSelectionScreen: React.FC = () => {
   const { theme } = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<PlayerSelectionNavigationProp>();
   const route = useRoute();
   const gameType = (route.params as any)?.gameType as GameType;
 
@@ -55,10 +59,10 @@ export const PlayerSelectionScreen: React.FC = () => {
       return;
     }
 
-    navigation.navigate('ConfigSetup' as never, {
+    navigation.navigate('ConfigSetup', {
       gameType,
-      selectedPlayers
-    } as never);
+      playerIds: selectedPlayers.map(p => p.id)
+    });
   };
 
   return (

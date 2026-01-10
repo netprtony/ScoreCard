@@ -1,4 +1,4 @@
-import { GameType } from './models';
+import { GameType, Match, Round } from './models';
 
 // Define the parameter list for the Match Stack
 export type MatchStackParamList = {
@@ -7,6 +7,12 @@ export type MatchStackParamList = {
     PlayerSelection: { gameType: GameType };
     ConfigSetup: { gameType: GameType; playerIds: string[] };
     RoundInput: { matchId: string };
+    RoundDetails: {
+        match: Match;
+        round: Round;
+        onUpdateRound: (roundId: string, scores: { [playerId: string]: number }) => void;
+        onDeleteRound: (roundId: string) => void;
+    };
 };
 
 // Define the parameter list for the Root Tab Navigator

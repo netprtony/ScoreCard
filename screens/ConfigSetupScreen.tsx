@@ -16,18 +16,21 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Player, GameType, ScoringConfig } from '../types/models';
 import { getDefaultConfig } from '../services/configService';
 import { createMatch } from '../services/matchService';
+import { getPlayerById } from '../services/playerService';
 import i18n from '../utils/i18n';
 
 export const ConfigSetupScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const route = useRoute();
-  const { gameType, selectedPlayers } = (route.params as any) || {};
+  const { gameType, playerIds } = (route.params as any) || {};
 
   const [config, setConfig] = useState<ScoringConfig | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
 
   useEffect(() => {
     loadDefaultConfig();
+    loadPlayers();
   }, []);
 
   const loadDefaultConfig = () => {
@@ -41,13 +44,41 @@ export const ConfigSetupScreen: React.FC = () => {
     }
   };
 
+  const loadPlayers = () => {
+    if (!playerIds || playerIds.length !== 4) {
+      console.error('Invalid playerIds:', playerIds);
+      Alert.alert('Lỗi', 'Thông tin người chơi không hợp lệ');
+      return;
+    }
+
+    try {
+      const loadedPlayers: Player[] = [];
+      for (const id of playerIds) {
+        const player = getPlayerById(id);
+        if (player) {
+          loadedPlayers.push(player);
+        }
+      }
+      
+      if (loadedPlayers.length !== 4) {
+        Alert.alert('Lỗi', 'Không thể tải thông tin người chơi');
+        return;
+      }
+      
+      setPlayers(loadedPlayers);
+    } catch (error) {
+      console.error('Error loading players:', error);
+      Alert.alert('Lỗi', 'Không thể tải thông tin người chơi');
+    }
+  };
+
   const updateConfig = (field: keyof ScoringConfig, value: any) => {
     if (!config) return;
     setConfig({ ...config, [field]: value });
   };
 
   const handleStartMatch = () => {
-    if (!config || !selectedPlayers || selectedPlayers.length !== 4) {
+    if (!config || !players || players.length !== 4) {
       Alert.alert('Lỗi', 'Thiếu thông tin cấu hình hoặc người chơi');
       return;
     }
@@ -64,10 +95,10 @@ export const ConfigSetupScreen: React.FC = () => {
     }
 
     try {
-      const playerIds = selectedPlayers.map((p: Player) => p.id);
-      const playerNames = selectedPlayers.map((p: Player) => p.name);
+      const playerIdList = players.map((p: Player) => p.id);
+      const playerNames = players.map((p: Player) => p.name);
 
-      createMatch(gameType.id, playerIds, playerNames, config);
+      createMatch(gameType.id, playerIdList, playerNames, config);
       
       // Navigate to active match
       navigation.navigate('ActiveMatch' as never);

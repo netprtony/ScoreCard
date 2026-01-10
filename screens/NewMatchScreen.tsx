@@ -19,7 +19,7 @@ import { Player, ScoringConfig, MatchPlayerResult, PenaltyType } from '../types/
 import { getAllPlayers } from '../services/playerService';
 import { getDefaultConfig, getAllConfigs } from '../services/configService';
 import { createMatch } from '../services/matchService';
-import { calculateMatchScores } from '../utils/scoringEngine';
+import { calculateRoundScores } from '../utils/scoringEngine';
 import i18n from '../utils/i18n';
 
 type MatchStep = 'select_players' | 'select_config' | 'input_results' | 'review';
@@ -139,12 +139,28 @@ export const NewMatchScreen: React.FC = () => {
 
     // Calculate scores
     const completeResults = matchResults as MatchPlayerResult[];
-    const scores = calculateMatchScores(completeResults, selectedConfig!);
+    
+    // Prepare parameters for calculateRoundScores
+    const playerIds = completeResults.map(r => r.playerId);
+    const rankings = completeResults.map(r => ({
+      playerId: r.playerId,
+      rank: r.rank!
+    }));
+    const toiTrangWinner = completeResults.find(r => r.isToiTrang)?.playerId;
+    const actions: any[] = []; // Actions would be populated from match results if needed
+    
+    const { roundScores } = calculateRoundScores(
+      playerIds,
+      rankings,
+      toiTrangWinner,
+      actions,
+      selectedConfig!
+    );
 
     // Update results with calculated scores
     const updatedResults = completeResults.map(result => ({
       ...result,
-      scoreChange: scores.get(result.playerId) || 0,
+      scoreChange: roundScores[result.playerId] || 0,
     }));
 
     setMatchResults(updatedResults);

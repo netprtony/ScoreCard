@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useMatch } from '../contexts/MatchContext';
 import { PlayerAction, PlayerActionType, PenaltyType, ChatHeoType } from '../types/models';
+import { calculateRoundScores, validateScores } from '../utils/scoringEngine';
 import i18n from '../utils/i18n';
 
 type PenaltyModalStep = 'select_type' | 'heo' | 'chong' | 'giet';
@@ -60,10 +61,13 @@ export const RoundInputScreen: React.FC = () => {
   const config = activeMatch.configSnapshot;
 
   const setPlayerRank = (playerId: string, rank: 1 | 2 | 3 | 4) => {
-    const existingPlayer = Object.entries(rankings).find(([id, r]) => r === rank && id !== playerId);
-    if (existingPlayer) {
-      Alert.alert('Lỗi', `Hạng ${rank} đã được chọn`);
-      return;
+    // Allow multiple rank 4 (for multiple kill victims)
+    if (rank !== 4) {
+      const existingPlayer = Object.entries(rankings).find(([id, r]) => r === rank && id !== playerId);
+      if (existingPlayer) {
+        Alert.alert('Lỗi', `Hạng ${rank} đã được chọn`);
+        return;
+      }
     }
     setRankings({ ...rankings, [playerId]: rank });
     if (rank !== 1 && toiTrangWinner === playerId) {
@@ -108,8 +112,19 @@ export const RoundInputScreen: React.FC = () => {
   };
 
   const getAvailableTargets = () => {
-    // Players who have ranks (excluding current player)
+    // For Giết: show ALL players except current player (no rank requirement)
+    if (penaltyType === 'giet') {
+      return activeMatch.playerIds.filter(id => id !== selectedPlayer);
+    }
+    // For Heo/Chồng: only players who have ranks
     return activeMatch.playerIds.filter(id => id !== selectedPlayer && rankings[id] !== undefined);
+  };
+
+  const openGietModal = (playerId: string) => {
+    setSelectedPlayer(playerId);
+    setModalStep('giet');
+    setPenaltyType('giet');
+    setShowPenaltyModal(true);
   };
 
   const toggleChongType = (type: ChatHeoType) => {
@@ -186,6 +201,15 @@ export const RoundInputScreen: React.FC = () => {
       }
       newAction.targetId = gietTarget;
       newAction.killedPenalties = gietPenalties;
+      
+      // Auto-assign ranks: Victim = 4 (can have multiple rank 4)
+      const newRankings = { ...rankings };
+      newRankings[gietTarget] = 4;
+      setRankings(newRankings);
+      
+      // Note: Dealer must manually assign:
+      // - Killer to rank 1
+      // - Other players to rank 2 (if double kill, neutral player)
     }
 
     setActions([...actions, newAction]);
@@ -194,12 +218,15 @@ export const RoundInputScreen: React.FC = () => {
   };
 
   const calculateAndSave = () => {
+    // Validate: If Tới Trắng, only need rank 1
     if (toiTrangWinner) {
       if (rankings[toiTrangWinner] !== 1) {
         Alert.alert('Lỗi', 'Người Tới Trắng phải về nhất');
         return;
       }
+      // Don't need all ranks for Tới Trắng
     } else {
+      // Validate all players have ranks
       const allRanked = activeMatch.playerIds.every(id => rankings[id] !== undefined);
       if (!allRanked) {
         Alert.alert('Lỗi', 'Vui lòng chọn hạng cho tất cả người chơi');
@@ -207,22 +234,36 @@ export const RoundInputScreen: React.FC = () => {
       }
     }
 
-    // Simple scoring (will be improved)
-    const roundScores: { [playerId: string]: number } = {};
-    
-    if (toiTrangWinner) {
-      const winnerScore = config.baseRatioFirst * config.toiTrangMultiplier;
-      activeMatch.playerIds.forEach(id => {
-        roundScores[id] = id === toiTrangWinner ? winnerScore * 3 : -winnerScore;
-      });
-    } else {
-      const sorted = activeMatch.playerIds.sort((a, b) => (rankings[a] || 5) - (rankings[b] || 5));
-      roundScores[sorted[0]] = config.baseRatioFirst;
-      roundScores[sorted[1]] = config.baseRatioSecond;
-      roundScores[sorted[2]] = -config.baseRatioSecond;
-      roundScores[sorted[3]] = -config.baseRatioFirst;
-    }
+    // Use scoring engine to calculate scores
+    const rankingsArray = activeMatch.playerIds.map(id => ({
+      playerId: id,
+      rank: rankings[id] || 4,
+    }));
 
+    const scoringResult = calculateRoundScores(
+      activeMatch.playerIds,
+      rankingsArray,
+      toiTrangWinner,
+      actions,
+      config
+    );
+
+    // Validate scores sum to zero
+    if (!validateScores(scoringResult.roundScores)) {
+      Alert.alert(
+        'Cảnh báo',
+        `Tổng điểm không bằng 0 (${Object.values(scoringResult.roundScores).reduce((a: number, b: number) => a + b, 0)}). Vẫn muốn lưu?`,
+        [
+          { text: 'Hủy', style: 'cancel' },
+          { text: 'Lưu', onPress: () => saveRound(scoringResult.roundScores) },
+        ]
+      );
+    } else {
+      saveRound(scoringResult.roundScores);
+    }
+  };
+
+  const saveRound = (roundScores: { [playerId: string]: number }) => {
     const roundData = {
       roundNumber: activeMatch.rounds.length + 1,
       rankings: activeMatch.playerIds.map(id => ({
@@ -320,33 +361,45 @@ export const RoundInputScreen: React.FC = () => {
                 ))}
               </View>
 
-              {config.enableToiTrang && rank === 1 && (
+              {/* 2-Column Row for Tới Trắng and Giết - Only for rank 1 */}
+              {rank === 1 && !toiTrangWinner && (
+                <View style={styles.twoColumnRow}>
+                  {config.enableToiTrang && (
+                    <TouchableOpacity
+                      style={[styles.twoColumnButton, { backgroundColor: theme.warning }]}
+                      onPress={() => toggleToiTrang(playerId)}
+                    >
+                      <Ionicons name="star-outline" size={20} color="#FFF" />
+                      <Text style={styles.twoColumnButtonText}>Tới Trắng</Text>
+                    </TouchableOpacity>
+                  )}
+                  {config.enableKill && (
+                    <TouchableOpacity
+                      style={[styles.twoColumnButton, { backgroundColor: theme.error }]}
+                      onPress={() => openGietModal(playerId)}
+                    >
+                      <Ionicons name="skull" size={20} color="#FFF" />
+                      <Text style={styles.twoColumnButtonText}>Giết</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              {/* Tới Trắng active state - Only for rank 1 */}
+              {config.enableToiTrang && rank === 1 && toiTrangWinner === playerId && (
                 <TouchableOpacity
-                  style={[
-                    styles.toiTrangButton,
-                    { backgroundColor: toiTrangWinner === playerId ? theme.warning : theme.surface },
-                  ]}
+                  style={[styles.toiTrangButton, { backgroundColor: theme.warning }]}
                   onPress={() => toggleToiTrang(playerId)}
                 >
-                  <Ionicons
-                    name={toiTrangWinner === playerId ? 'star' : 'star-outline'}
-                    size={20}
-                    color={toiTrangWinner === playerId ? '#FFF' : theme.text}
-                  />
-                  <Text
-                    style={[
-                      styles.toiTrangText,
-                      { color: toiTrangWinner === playerId ? '#FFF' : theme.text },
-                    ]}
-                  >
-                    Tới Trắng
-                  </Text>
+                  <Ionicons name="star" size={20} color="#FFF" />
+                  <Text style={styles.toiTrangText}>Tới Trắng</Text>
                 </TouchableOpacity>
               )}
 
+              {/* Penalty Button - Only if not Tới Trắng and has rank */}
               {!toiTrangWinner && rank && (
                 <TouchableOpacity
-                  style={[styles.penaltyButton, { backgroundColor: theme.error }]}
+                  style={[styles.penaltyButton, { backgroundColor: theme.primary }]}
                   onPress={() => openPenaltyModal(playerId)}
                 >
                   <Ionicons name="warning" size={20} color="#FFF" />
@@ -699,8 +752,11 @@ const styles = StyleSheet.create({
   rankRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   rankButton: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 2, alignItems: 'center' },
   rankButtonText: { fontSize: 16, fontWeight: 'bold' },
+  twoColumnRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  twoColumnButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, gap: 8 },
+  twoColumnButtonText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
   toiTrangButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, marginBottom: 8, gap: 8 },
-  toiTrangText: { fontSize: 14, fontWeight: '600' },
+  toiTrangText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
   penaltyButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, gap: 8 },
   penaltyButtonText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
   saveButton: { position: 'absolute', bottom: 20, left: 20, right: 20, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
