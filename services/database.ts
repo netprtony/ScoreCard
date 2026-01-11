@@ -173,10 +173,10 @@ export const initDatabase = (): void => {
                 is_default, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
             [
-                'default', 'Cấu hình mặc định', 4, 2,
+                'default', 'Cấu hình mặc định', 10, 5,
                 2, 2,
                 5, 10, 5,
-                5, 10,
+                10, 10,
                 5, 10, 2,
                 5, 1, 1,
                 1, 1, 1,

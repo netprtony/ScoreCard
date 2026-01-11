@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import FlashMessage from 'react-native-flash-message';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { MatchProvider } from './contexts/MatchContext';
 import { AppNavigator } from './navigation/AppNavigator';
@@ -35,6 +36,7 @@ const AppContent: React.FC = () => {
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <AppNavigator />
+      <FlashMessage position="top" />
     </>
   );
 };

@@ -18,7 +18,7 @@ import { getDefaultConfig } from '../services/configService';
 import { createMatch } from '../services/matchService';
 import { getPlayerById } from '../services/playerService';
 import i18n from '../utils/i18n';
-
+import { showSuccess, showWarning } from '../utils/toast';
 export const ConfigSetupScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
@@ -47,7 +47,7 @@ export const ConfigSetupScreen: React.FC = () => {
   const loadPlayers = () => {
     if (!playerIds || playerIds.length !== 4) {
       console.error('Invalid playerIds:', playerIds);
-      Alert.alert('Lỗi', 'Thông tin người chơi không hợp lệ');
+      showWarning('Lỗi', 'Thông tin người chơi không hợp lệ');
       return;
     }
 
@@ -61,14 +61,14 @@ export const ConfigSetupScreen: React.FC = () => {
       }
       
       if (loadedPlayers.length !== 4) {
-        Alert.alert('Lỗi', 'Không thể tải thông tin người chơi');
+        showWarning('Lỗi', 'Không thể tải thông tin người chơi');
         return;
       }
       
       setPlayers(loadedPlayers);
     } catch (error) {
       console.error('Error loading players:', error);
-      Alert.alert('Lỗi', 'Không thể tải thông tin người chơi');
+      showWarning('Lỗi', 'Không thể tải thông tin người chơi');
     }
   };
 
@@ -79,18 +79,18 @@ export const ConfigSetupScreen: React.FC = () => {
 
   const handleStartMatch = () => {
     if (!config || !players || players.length !== 4) {
-      Alert.alert('Lỗi', 'Thiếu thông tin cấu hình hoặc người chơi');
+      showWarning('Lỗi', 'Thiếu thông tin cấu hình hoặc người chơi');
       return;
     }
 
     // Validate config
     if (config.baseRatioFirst <= config.baseRatioSecond) {
-      Alert.alert('Lỗi', 'Hệ số 1 phải lớn hơn hệ số 2');
+      showWarning('Lỗi', 'Hệ số 1 phải lớn hơn hệ số 2');
       return;
     }
 
     if (config.penaltyHeoDo <= config.penaltyHeoDen) {
-      Alert.alert('Lỗi', 'Phạt heo đỏ phải lớn hơn heo đen');
+      showWarning('Lỗi', 'Phạt heo đỏ phải lớn hơn heo đen');
       return;
     }
 
@@ -104,7 +104,7 @@ export const ConfigSetupScreen: React.FC = () => {
       navigation.navigate('ActiveMatch' as never);
     } catch (error) {
       console.error('Error creating match:', error);
-      Alert.alert('Lỗi', 'Không thể tạo trận đấu');
+      showWarning('Lỗi', 'Không thể tạo trận đấu');
     }
   };
 
@@ -210,10 +210,10 @@ export const ConfigSetupScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Phạt Thối */}
+        {/* Phạt Thối/Chồng */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
           <View style={styles.switchRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Phạt Thối</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Phạt Thối/Chồng</Text>
             <Switch
               value={config.enablePenalties}
               onValueChange={(value) => updateConfig('enablePenalties', value)}
@@ -240,16 +240,6 @@ export const ConfigSetupScreen: React.FC = () => {
                   style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                   value={config.penaltyHeoDo.toString()}
                   onChangeText={(text) => updateConfig('penaltyHeoDo', parseInt(text) || 0)}
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>3 tép:</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-                  value={config.penaltyBaTep.toString()}
-                  onChangeText={(text) => updateConfig('penaltyBaTep', parseInt(text) || 0)}
                   keyboardType="numeric"
                 />
               </View>
@@ -310,23 +300,13 @@ export const ConfigSetupScreen: React.FC = () => {
                   keyboardType="numeric"
                 />
               </View>
-
-              <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số chồng:</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-                  value={config.chongHeoMultiplier.toString()}
-                  onChangeText={(text) => updateConfig('chongHeoMultiplier', parseInt(text) || 0)}
-                  keyboardType="numeric"
-                />
-              </View>
             </>
           )}
         </View>
 
         {/* Đút 3 Tép */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <View style={styles.switchRow}>
+          {/* <View style={styles.switchRow}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Đút 3 Tép</Text>
             <Switch
               value={config.enableDutBaTep}
@@ -334,18 +314,29 @@ export const ConfigSetupScreen: React.FC = () => {
               trackColor={{ false: theme.border, true: theme.primary }}
               thumbColor="#FFF"
             />
-          </View>
+          </View> */}
           
           {config.enableDutBaTep && (
-            <View style={styles.inputRow}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Điểm:</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-                value={config.dutBaTep.toString()}
-                onChangeText={(text) => updateConfig('dutBaTep', parseInt(text) || 0)}
-                keyboardType="numeric"
-              />
-            </View>
+            <>
+              {/* <View style={styles.inputRow}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Điểm đút:</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                  value={config.dutBaTep.toString()}
+                  onChangeText={(text) => updateConfig('dutBaTep', parseInt(text) || 0)}
+                  keyboardType="numeric"
+                />
+              </View> */}
+              <View style={styles.inputRow}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Phạt thối 3 tép:</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                  value={config.penaltyBaTep.toString()}
+                  onChangeText={(text) => updateConfig('penaltyBaTep', parseInt(text) || 0)}
+                  keyboardType="numeric"
+                />
+              </View>
+            </>
           )}
         </View>
       </ScrollView>

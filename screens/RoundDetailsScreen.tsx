@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Match, Round } from '../types/models';
 import { formatActionDescription, formatToiTrangAction } from '../utils/actionFormatter';
+import { showSuccess, showWarning } from '../utils/toast';
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export const RoundDetailsScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -24,6 +29,80 @@ export const RoundDetailsScreen: React.FC = () => {
     });
     return scores;
   });
+  
+  const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
+
+  const toggleActionExpand = (actionId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedActionId(expandedActionId === actionId ? null : actionId);
+  };
+
+  // Calculate score breakdown for an action
+  const getActionScoreBreakdown = (actionId: string): { playerId: string; playerName: string; score: number }[] => {
+    if (actionId === 'toi-trang' && round.toiTrangWinner) {
+      // Tới Trắng: winner gets positive, others split negative
+      const winnerScore = round.roundScores[round.toiTrangWinner] || 0;
+      const totalLoss = -winnerScore;
+      const losersCount = match.playerIds.length - 1;
+      const lossPerPlayer = losersCount > 0 ? Math.floor(totalLoss / losersCount) : 0;
+      
+      return match.playerIds.map((id, idx) => ({
+        playerId: id,
+        playerName: match.playerNames[idx],
+        score: id === round.toiTrangWinner ? winnerScore : -lossPerPlayer,
+      }));
+    }
+    
+    // For other actions, find the action and calculate
+    const actionIndex = parseInt(actionId.replace('action-', ''));
+    const action = round.actions[actionIndex];
+    if (!action) return [];
+    
+    const config = match.configSnapshot;
+    const breakdown: { playerId: string; playerName: string; score: number }[] = [];
+    
+    match.playerIds.forEach((id, idx) => {
+      let score = 0;
+      
+      if (action.actionType === 'heo') {
+        // Chặt Heo: actor gains, target loses
+        const penaltyValue = action.heoType === 'den' ? config.chatHeoBlack : config.chatHeoRed;
+        const totalPenalty = penaltyValue * (action.heoCount || 1);
+        
+        if (id === action.actorId) score = totalPenalty;
+        else if (id === action.targetId) score = -totalPenalty;
+      } else if (action.actionType === 'chong') {
+        // Chồng: actor gains, target loses
+        let totalPenalty = 0;
+        action.chongTypes?.forEach(type => {
+          const count = action.chongCounts?.[type] || 1;
+          const baseValue = type === 'heo_den' ? config.penaltyHeoDen : 
+                           type === 'heo_do' ? config.penaltyHeoDo :
+                           type === 'ba_doi_thong' ? config.penaltyBaDoiThong :
+                           type === 'tu_quy' ? config.penaltyTuQuy : 0;
+          totalPenalty += baseValue * count;
+        });
+        
+        if (id === action.actorId) score = totalPenalty;
+        else if (id === action.targetId) score = -totalPenalty;
+      } else if (action.actionType === 'dut_ba_tep') {
+        const penalty = config.penaltyBaTep || 0;
+        if (id === action.actorId) score = penalty;
+        else if (id === action.targetId) score = -penalty;
+      } else if (action.actionType === 'giet') {
+        // Giết: more complex, use round scores
+        score = round.roundScores[id] || 0;
+      }
+      
+      breakdown.push({
+        playerId: id,
+        playerName: match.playerNames[idx],
+        score,
+      });
+    });
+    
+    return breakdown.filter(b => b.score !== 0);
+  };
 
   const handleSave = () => {
     // Convert strings to numbers
@@ -40,7 +119,7 @@ export const RoundDetailsScreen: React.FC = () => {
     });
 
     if (hasError) {
-      Alert.alert('Lỗi', 'Vui lòng nhập số hợp lệ');
+      showWarning('Lỗi', 'Vui lòng nhập số hợp lệ');
       return;
     }
 
@@ -116,18 +195,43 @@ export const RoundDetailsScreen: React.FC = () => {
                 const winnerName = match.playerNames[winnerIndex];
                 const winnerScore = round.roundScores[round.toiTrangWinner] || 0;
                 const formatted = formatToiTrangAction(winnerName, winnerScore);
+                const isExpanded = expandedActionId === 'toi-trang';
+                const breakdown = isExpanded ? getActionScoreBreakdown('toi-trang') : [];
                 
                 return (
-                  <View key="toi-trang" style={[styles.actionItem, { borderLeftColor: formatted.color }]}>
-                    <Text style={styles.actionIcon}>{formatted.icon}</Text>
-                    <View style={styles.actionContent}>
-                      <Text style={[styles.actionText, { color: theme.text }]}>
-                        {formatted.text}
-                      </Text>
-                    </View>
-                    <Text style={[styles.actionScore, { color: formatted.color }]}>
-                      {formatted.score}
-                    </Text>
+                  <View key="toi-trang">
+                    <TouchableOpacity 
+                      style={[styles.actionItem, { borderLeftColor: formatted.color, backgroundColor: theme.surface }]}
+                      onPress={() => toggleActionExpand('toi-trang')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.actionIcon}>{formatted.icon}</Text>
+                      <View style={styles.actionContent}>
+                        <Text style={[styles.actionText, { color: theme.text }]}>
+                          {formatted.text}
+                        </Text>
+                        <Text style={[styles.tapHint, { color: theme.textSecondary }]}>
+                          Nhấn để xem chi tiết
+                        </Text>
+                      </View>
+                      <Ionicons 
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+                        size={20} 
+                        color={theme.textSecondary} 
+                      />
+                    </TouchableOpacity>
+                    {isExpanded && (
+                      <View style={[styles.breakdownContainer, { backgroundColor: theme.background }]}>
+                        {breakdown.map(item => (
+                          <View key={item.playerId} style={styles.breakdownRow}>
+                            <Text style={[styles.breakdownName, { color: theme.text }]}>{item.playerName}</Text>
+                            <Text style={[styles.breakdownScore, { color: item.score >= 0 ? '#4CAF50' : '#F44336' }]}>
+                              {item.score >= 0 ? `+${item.score}` : item.score}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 );
               })()}
@@ -148,29 +252,116 @@ export const RoundDetailsScreen: React.FC = () => {
                 }
                 
                 const formatted = formatActionDescription(action, actorName, targetName, scoreChange);
+                const actionId = `action-${idx}`;
+                const isExpanded = expandedActionId === actionId;
+                const breakdown = isExpanded ? getActionScoreBreakdown(actionId) : [];
                 
                 return (
-                  <View key={`action-${idx}`} style={[styles.actionItem, { borderLeftColor: formatted.color }]}>
-                    <Text style={styles.actionIcon}>{formatted.icon}</Text>
-                    <View style={styles.actionContent}>
-                      <Text style={[styles.actionText, { color: theme.text }]}>
-                        {formatted.text}
-                      </Text>
-                      {formatted.details && (
-                        <Text style={[styles.actionDetails, { color: theme.textSecondary }]}>
-                          {formatted.details}
+                  <View key={actionId}>
+                    <TouchableOpacity 
+                      style={[styles.actionItem, { borderLeftColor: formatted.color, backgroundColor: theme.surface }]}
+                      onPress={() => toggleActionExpand(actionId)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.actionIcon}>{formatted.icon}</Text>
+                      <View style={styles.actionContent}>
+                        <Text style={[styles.actionText, { color: theme.text }]}>
+                          {formatted.text}
                         </Text>
-                      )}
-                    </View>
-                    <Text style={[styles.actionScore, { color: formatted.color }]}>
-                      {formatted.score}
-                    </Text>
+                        {formatted.details && (
+                          <Text style={[styles.actionDetails, { color: theme.textSecondary }]}>
+                            {formatted.details}
+                          </Text>
+                        )}
+                        <Text style={[styles.tapHint, { color: theme.textSecondary }]}>
+                          Nhấn để xem chi tiết
+                        </Text>
+                      </View>
+                      <Ionicons 
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+                        size={20} 
+                        color={theme.textSecondary} 
+                      />
+                    </TouchableOpacity>
+                    {isExpanded && breakdown.length > 0 && (
+                      <View style={[styles.breakdownContainer, { backgroundColor: theme.background }]}>
+                        {breakdown.map(item => (
+                          <View key={item.playerId} style={styles.breakdownRow}>
+                            <Text style={[styles.breakdownName, { color: theme.text }]}>{item.playerName}</Text>
+                            <Text style={[styles.breakdownScore, { color: item.score >= 0 ? '#4CAF50' : '#F44336' }]}>
+                              {item.score >= 0 ? `+${item.score}` : item.score}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 );
               })}
             </ScrollView>
           </View>
         )}
+
+        {/* Rank Results Section */}
+        <View style={[styles.section, { backgroundColor: theme.card }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            🏆 Kết Quả
+          </Text>
+          
+          {(() => {
+            // Helper to get rank label
+            const getRankLabel = (rank: number) => {
+              switch(rank) {
+                case 1: return 'Nhất';
+                case 2: return 'Nhì';
+                case 3: return 'Ba';
+                case 4: return 'Bét';
+                default: return '';
+              }
+            };
+
+            // Get rank color
+            const getRankColor = (rank: number) => {
+              switch(rank) {
+                case 1: return '#FFD700';
+                case 2: return '#C0C0C0';
+                case 3: return '#CD7F32';
+                case 4: return '#666666';
+                default: return theme.text;
+              }
+            };
+
+            // Build sorted players by rank
+            const sortedPlayers = match.playerIds
+              .map((id, idx) => {
+                const rankEntry = round.rankings?.find(r => r.playerId === id);
+                return {
+                  id,
+                  name: match.playerNames[idx],
+                  score: round.roundScores[id] || 0,
+                  rank: rankEntry?.rank || 4,
+                };
+              })
+              .sort((a, b) => a.rank - b.rank);
+
+            return sortedPlayers.map((player, idx) => (
+              <View key={player.id} style={[styles.rankResultRow, { borderBottomColor: theme.border }]}>
+                <View style={[styles.rankBadge, { backgroundColor: getRankColor(player.rank) }]}>
+                  <Text style={styles.rankBadgeText}>{player.rank}</Text>
+                </View>
+                <View style={styles.rankResultInfo}>
+                  <Text style={[styles.rankResultName, { color: theme.text }]}>{player.name}</Text>
+                  <Text style={[styles.rankResultLabel, { color: theme.textSecondary }]}>
+                    ({getRankLabel(player.rank)})
+                  </Text>
+                </View>
+                <Text style={[styles.rankResultScore, { color: player.score >= 0 ? '#4CAF50' : '#F44336' }]}>
+                  {player.score >= 0 ? `+${player.score}` : player.score}
+                </Text>
+              </View>
+            ));
+          })()}
+        </View>
 
         {/* Scores Section */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
@@ -255,7 +446,6 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     borderRadius: 8,
-    backgroundColor: '#F5F5F5',
     borderLeftWidth: 4,
   },
   actionIcon: {
@@ -278,6 +468,66 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 12,
+  },
+  tapHint: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  breakdownContainer: {
+    marginLeft: 40,
+    marginRight: 12,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 8,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  breakdownName: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  breakdownScore: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  rankResultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  rankBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  rankBadgeText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  rankResultInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rankResultName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  rankResultLabel: {
+    fontSize: 14,
+  },
+  rankResultScore: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   scoreInputRow: {
     flexDirection: 'row',

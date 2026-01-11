@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   SafeAreaView,
   Alert,
   Modal,
+  Vibration,
+  Animated,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -17,8 +21,8 @@ import { Player, PlayerAction, PlayerActionType, PenaltyType, ChatHeoType } from
 import { getPlayerById } from '../services/playerService';
 import { calculateRoundScores, validateScores } from '../utils/scoringEngine';
 import i18n from '../utils/i18n';
-
-type PenaltyModalStep = 'select_type' | 'heo' | 'chong' | 'giet';
+import { showSuccess, showWarning } from '../utils/toast';
+type PenaltyModalStep = 'select_type' | 'heo' | 'chong' | 'giet' | 'dut_ba_tep';
 
 export const RoundInputScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -34,7 +38,7 @@ export const RoundInputScreen: React.FC = () => {
   const [showPenaltyModal, setShowPenaltyModal] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const [modalStep, setModalStep] = useState<PenaltyModalStep>('select_type');
-  const [penaltyType, setPenaltyType] = useState<'heo' | 'chong' | 'giet' | null>(null);
+  const [penaltyType, setPenaltyType] = useState<'heo' | 'chong' | 'giet' | 'dut_ba_tep' | null>(null);
   
   // Heo state
   const [heoType, setHeoType] = useState<'den' | 'do'>('den');
@@ -49,6 +53,9 @@ export const RoundInputScreen: React.FC = () => {
   // Giết state
   const [gietTarget, setGietTarget] = useState<string | null>(null);
   const [gietPenalties, setGietPenalties] = useState<{ type: PenaltyType; count: number }[]>([]);
+
+  // Đút 3 Tép state
+  const [dutBaTepTarget, setDutBaTepTarget] = useState<string | null>(null);
 
   // Load player data for colors
   useEffect(() => {
@@ -78,13 +85,39 @@ export const RoundInputScreen: React.FC = () => {
   }
 
   const config = activeMatch.configSnapshot;
+  
+  // Shake animation for duplicate rank
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+  
+  const triggerShake = () => {
+    Vibration.vibrate(100);
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+    ]).start();
+  };
 
   const setPlayerRank = (playerId: string, rank: 1 | 2 | 3 | 4) => {
-    // Allow multiple rank 4 (for multiple kill victims)
+    // Toggle: if already has this rank, remove it
+    if (rankings[playerId] === rank) {
+      const { [playerId]: removed, ...rest } = rankings;
+      setRankings(rest as { [playerId: string]: 1 | 2 | 3 | 4 | undefined });
+      if (toiTrangWinner === playerId) {
+        setToiTrangWinner(undefined);
+      }
+      return;
+    }
+    
+    // Check duplicate rank (except rank 4 which can have multiple)
     if (rank !== 4) {
       const existingPlayer = Object.entries(rankings).find(([id, r]) => r === rank && id !== playerId);
       if (existingPlayer) {
-        Alert.alert('Lỗi', `Hạng ${rank} đã được chọn`);
+        // Shake instead of Alert
+        showWarning('Lỗi', 'Không thể gán hai người cùng một hạng');
+        triggerShake();
         return;
       }
     }
@@ -96,7 +129,7 @@ export const RoundInputScreen: React.FC = () => {
 
   const toggleToiTrang = (playerId: string) => {
     if (rankings[playerId] !== 1) {
-      Alert.alert('Lỗi', 'Chỉ người về nhất mới có thể Tới Trắng');
+      showWarning('Lỗi', 'Chỉ người về nhất mới có thể Tới Trắng');
       return;
     }
     setToiTrangWinner(toiTrangWinner === playerId ? undefined : playerId);
@@ -123,9 +156,10 @@ export const RoundInputScreen: React.FC = () => {
     setChongTarget(null);
     setGietTarget(null);
     setGietPenalties([]);
+    setDutBaTepTarget(null);
   };
 
-  const selectPenaltyType = (type: 'heo' | 'chong' | 'giet') => {
+  const selectPenaltyType = (type: 'heo' | 'chong' | 'giet' | 'dut_ba_tep') => {
     setPenaltyType(type);
     setModalStep(type);
   };
@@ -199,7 +233,7 @@ export const RoundInputScreen: React.FC = () => {
 
     if (penaltyType === 'heo') {
       if (!heoTarget) {
-        Alert.alert('Lỗi', 'Vui lòng chọn người bị phạt');
+        showWarning('Lỗi', 'Vui lòng chọn người bị phạt');
         return;
       }
       newAction.targetId = heoTarget;
@@ -207,7 +241,7 @@ export const RoundInputScreen: React.FC = () => {
       newAction.heoCount = heoCount;
     } else if (penaltyType === 'chong') {
       if (!chongTarget || chongTypes.length === 0) {
-        Alert.alert('Lỗi', 'Vui lòng chọn loại chồng và người bị phạt');
+        showWarning('Lỗi', 'Vui lòng chọn loại chồng và người bị phạt');
         return;
       }
       newAction.targetId = chongTarget;
@@ -215,7 +249,7 @@ export const RoundInputScreen: React.FC = () => {
       newAction.chongCounts = chongCounts;
     } else if (penaltyType === 'giet') {
       if (!gietTarget) {
-        Alert.alert('Lỗi', 'Vui lòng chọn người bị giết');
+        showWarning('Lỗi', 'Vui lòng chọn người bị giết');
         return;
       }
       newAction.targetId = gietTarget;
@@ -229,18 +263,24 @@ export const RoundInputScreen: React.FC = () => {
       // Note: Dealer must manually assign:
       // - Killer to rank 1
       // - Other players to rank 2 (if double kill, neutral player)
+    } else if (penaltyType === 'dut_ba_tep') {
+      if (!dutBaTepTarget) {
+        showWarning('Lỗi', 'Vui lòng chọn người bị phạt');
+        return;
+      }
+      newAction.targetId = dutBaTepTarget;
     }
 
     setActions([...actions, newAction]);
     closePenaltyModal();
-    Alert.alert('Thành công', 'Đã thêm phạt');
+    showSuccess('Thành công', 'Đã thêm phạt');
   };
 
   const calculateAndSave = () => {
     // Validate: If Tới Trắng, only need rank 1
     if (toiTrangWinner) {
       if (rankings[toiTrangWinner] !== 1) {
-        Alert.alert('Lỗi', 'Người Tới Trắng phải về nhất');
+        showWarning('Lỗi', 'Người Tới Trắng phải về nhất');
         return;
       }
       // Don't need all ranks for Tới Trắng
@@ -248,9 +288,10 @@ export const RoundInputScreen: React.FC = () => {
       // Validate all players have ranks
       const allRanked = activeMatch.playerIds.every(id => rankings[id] !== undefined);
       if (!allRanked) {
-        Alert.alert('Lỗi', 'Vui lòng chọn hạng cho tất cả người chơi');
+        showWarning('Lỗi', 'Vui lòng chọn hạng cho tất cả người chơi');
         return;
       }
+    
     }
 
     // Use scoring engine to calculate scores
@@ -299,12 +340,11 @@ export const RoundInputScreen: React.FC = () => {
 
     try {
       addRound(roundData);
-      Alert.alert('Thành công', 'Đã lưu ván đấu', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      showSuccess('Thành công', 'Đã lưu ván đấu');
+      navigation.goBack();
     } catch (error) {
       console.error('Error saving round:', error);
-      Alert.alert('Lỗi', 'Không thể lưu ván đấu');
+      showWarning('Lỗi', 'Không thể lưu ván đấu');
     }
   };
 
@@ -357,7 +397,7 @@ export const RoundInputScreen: React.FC = () => {
                 )}
               </View>
 
-              <View style={styles.rankRow}>
+              <Animated.View style={[styles.rankRow, { transform: [{ translateX: shakeAnim }] }]}>
                 {[1, 2, 3, 4].map(r => (
                   <TouchableOpacity
                     key={r}
@@ -380,7 +420,7 @@ export const RoundInputScreen: React.FC = () => {
                     </Text>
                   </TouchableOpacity>
                 ))}
-              </View>
+              </Animated.View>
 
               {/* 2-Column Row for Tới Trắng and Giết - Only for rank 1 */}
               {rank === 1 && !toiTrangWinner && (
@@ -424,7 +464,7 @@ export const RoundInputScreen: React.FC = () => {
                   onPress={() => openPenaltyModal(playerId)}
                 >
                   <Ionicons name="warning" size={20} color="#FFF" />
-                  <Text style={styles.penaltyButtonText}>Phạt</Text>
+                  <Text style={styles.penaltyButtonText}>Phạt ai đó</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -442,33 +482,41 @@ export const RoundInputScreen: React.FC = () => {
       {/* Penalty Modal */}
       <Modal
         visible={showPenaltyModal}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={closePenaltyModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+        <TouchableWithoutFeedback onPress={closePenaltyModal}>
+          <BlurView intensity={50} style={styles.modalOverlay} tint="dark">
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
             {modalStep === 'select_type' && (
               <>
                 <Text style={[styles.modalTitle, { color: theme.text }]}>Chọn Loại Phạt</Text>
-                <TouchableOpacity
-                  style={[styles.modalOption, { backgroundColor: theme.surface }]}
-                  onPress={() => selectPenaltyType('heo')}
-                >
-                  <Text style={[styles.modalOptionText, { color: theme.text }]}>Heo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalOption, { backgroundColor: theme.surface }]}
-                  onPress={() => selectPenaltyType('chong')}
-                >
-                  <Text style={[styles.modalOptionText, { color: theme.text }]}>Chồng</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalOption, { backgroundColor: theme.surface }]}
-                  onPress={() => selectPenaltyType('giet')}
-                >
-                  <Text style={[styles.modalOptionText, { color: theme.text }]}>Giết</Text>
-                </TouchableOpacity>
+                {config.enableChatHeo && (
+                  <TouchableOpacity
+                    style={[styles.modalOption, { backgroundColor: theme.surface }]}
+                    onPress={() => selectPenaltyType('heo')}
+                  >
+                    <Text style={[styles.modalOptionText, { color: theme.text }]}>Chặt Heo</Text>
+                  </TouchableOpacity>
+                )}
+                {config.enablePenalties && (
+                  <TouchableOpacity
+                    style={[styles.modalOption, { backgroundColor: theme.surface }]}
+                    onPress={() => selectPenaltyType('chong')}
+                  >
+                    <Text style={[styles.modalOptionText, { color: theme.text }]}>Chồng/Thúi</Text>
+                  </TouchableOpacity>
+                )}
+                {/* {config.enableDutBaTep && (
+                  <TouchableOpacity
+                    style={[styles.modalOption, { backgroundColor: theme.surface }]}
+                    onPress={() => selectPenaltyType('dut_ba_tep')}
+                  >
+                    <Text style={[styles.modalOptionText, { color: theme.text }]}>3 Tép</Text>
+                  </TouchableOpacity>
+                )} */}
                 <TouchableOpacity
                   style={[styles.modalButton, { backgroundColor: theme.border }]}
                   onPress={closePenaltyModal}
@@ -751,8 +799,58 @@ export const RoundInputScreen: React.FC = () => {
                 </View>
               </ScrollView>
             )}
-          </View>
-        </View>
+
+            {modalStep === 'dut_ba_tep' && (
+              <ScrollView>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Đút 3 Tép</Text>
+                
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Người bị phạt:</Text>
+                {getAvailableTargets().map(targetId => {
+                  const targetIndex = activeMatch.playerIds.indexOf(targetId);
+                  const targetName = activeMatch.playerNames[targetIndex];
+                  return (
+                    <TouchableOpacity
+                      key={targetId}
+                      style={[
+                        styles.targetButton,
+                        {
+                          backgroundColor: dutBaTepTarget === targetId ? theme.primary : theme.surface,
+                        },
+                      ]}
+                      onPress={() => setDutBaTepTarget(targetId)}
+                    >
+                      <Text
+                        style={[
+                          styles.targetButtonText,
+                          { color: dutBaTepTarget === targetId ? '#FFF' : theme.text },
+                        ]}
+                      >
+                        {targetName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.border, flex: 1, marginRight: 8 }]}
+                    onPress={() => setModalStep('select_type')}
+                  >
+                    <Text style={styles.modalButtonText}>Quay lại</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.primary, flex: 1 }]}
+                    onPress={saveAction}
+                  >
+                    <Text style={styles.modalButtonText}>Lưu</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+              </View>
+            </TouchableWithoutFeedback>
+          </BlurView>
+        </TouchableWithoutFeedback>
       </Modal>
     </SafeAreaView>
   );
@@ -762,15 +860,15 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingBottom: 12 },
   title: { fontSize: 24, fontWeight: 'bold' },
-  content: { padding: 20, paddingBottom: 100 },
-  playerCard: { borderRadius: 12, padding: 16, marginBottom: 12 },
-  playerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  playerAvatar: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  playerAvatarText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  playerName: { fontSize: 18, fontWeight: 'bold', flex: 1 },
+  content: { padding: 12, paddingBottom: 100 },
+  playerCard: { borderRadius: 10, padding: 12, marginBottom: 8 },
+  playerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  playerAvatar: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  playerAvatarText: { color: '#FFF', fontSize: 14, fontWeight: 'bold' },
+  playerName: { fontSize: 16, fontWeight: 'bold', flex: 1 },
   actionBadge: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   actionBadgeText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
-  rankRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  rankRow: { flexDirection: 'row', gap: 6, marginBottom: 6 },
   rankButton: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 2, alignItems: 'center' },
   rankButtonText: { fontSize: 16, fontWeight: 'bold' },
   twoColumnRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
@@ -784,7 +882,7 @@ const styles = StyleSheet.create({
   saveButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { fontSize: 16 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
   modalContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
   modalSubtitle: { fontSize: 14, marginBottom: 16 },

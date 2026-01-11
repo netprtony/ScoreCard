@@ -23,7 +23,7 @@ import {
   getPlayerCount,
 } from '../services/playerService';
 import i18n from '../utils/i18n';
-
+import { showSuccess, showWarning } from '../utils/toast';
 // Predefined color palette
 const PLAYER_COLORS = [
   '#FF6B6B', // Red
@@ -67,13 +67,13 @@ export const PlayerListScreen: React.FC = () => {
 
   const handleAddPlayer = async () => {
     if (!playerName.trim()) {
-      Alert.alert('Lỗi', i18n.t('errorPlayerName'));
+      showWarning('Lỗi', i18n.t('errorPlayerName'));
       return;
     }
 
     const count = await getPlayerCount();
     if (count >= 10) {
-      Alert.alert('Lỗi', i18n.t('maxPlayers'));
+      showWarning('Lỗi', i18n.t('maxPlayers'));
       return;
     }
 
@@ -86,7 +86,7 @@ export const PlayerListScreen: React.FC = () => {
       await loadPlayers();
     } catch (error) {
       console.error('Error adding player:', error);
-      Alert.alert('Lỗi', 'Không thể thêm người chơi');
+      showWarning('Lỗi', 'Không thể thêm người chơi');
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export const PlayerListScreen: React.FC = () => {
 
   const handleEditPlayer = async () => {
     if (!playerName.trim() || !editingPlayer) {
-      Alert.alert('Lỗi', i18n.t('errorPlayerName'));
+      showWarning('Lỗi', i18n.t('errorPlayerName'));
       return;
     }
 
@@ -108,7 +108,7 @@ export const PlayerListScreen: React.FC = () => {
       await loadPlayers();
     } catch (error) {
       console.error('Error updating player:', error);
-      Alert.alert('Lỗi', 'Không thể cập nhật người chơi');
+      showWarning('Lỗi', 'Không thể cập nhật người chơi');
     } finally {
       setLoading(false);
     }
@@ -129,7 +129,7 @@ export const PlayerListScreen: React.FC = () => {
               await loadPlayers();
             } catch (error) {
               console.error('Error deleting player:', error);
-              Alert.alert('Lỗi', 'Không thể xóa người chơi');
+              showWarning('Lỗi', 'Không thể xóa người chơi');
             }
           },
         },

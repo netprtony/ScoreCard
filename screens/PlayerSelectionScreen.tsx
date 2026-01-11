@@ -17,7 +17,7 @@ import { Player, GameType } from '../types/models';
 import { MatchStackParamList } from '../types/navigation';
 import { getAllPlayers } from '../services/playerService';
 import i18n from '../utils/i18n';
-
+import { showSuccess, showWarning } from '../utils/toast';
 type PlayerSelectionNavigationProp = NativeStackNavigationProp<MatchStackParamList, 'PlayerSelection'>;
 
 export const PlayerSelectionScreen: React.FC = () => {
@@ -49,14 +49,14 @@ export const PlayerSelectionScreen: React.FC = () => {
       if (selectedPlayers.length < 4) {
         setSelectedPlayers([...selectedPlayers, player]);
       } else {
-        Alert.alert('Lỗi', 'Chỉ được chọn tối đa 4 người chơi');
+        showWarning('Lỗi', 'Chỉ được chọn tối đa 4 người chơi');
       }
     }
   };
 
   const handleNext = () => {
     if (selectedPlayers.length !== 4) {
-      Alert.alert('Lỗi', 'Vui lòng chọn đúng 4 người chơi');
+      showWarning('Lỗi', 'Vui lòng chọn đúng 4 người chơi');
       return;
     }
 

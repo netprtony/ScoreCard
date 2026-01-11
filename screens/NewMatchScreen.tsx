@@ -21,7 +21,7 @@ import { getDefaultConfig, getAllConfigs } from '../services/configService';
 import { createMatch } from '../services/matchService';
 import { calculateRoundScores } from '../utils/scoringEngine';
 import i18n from '../utils/i18n';
-
+import { showSuccess, showWarning } from '../utils/toast';
 type MatchStep = 'select_players' | 'select_config' | 'input_results' | 'review';
 
 export const NewMatchScreen: React.FC = () => {
@@ -62,18 +62,18 @@ export const NewMatchScreen: React.FC = () => {
       if (selectedPlayers.length < 4) {
         setSelectedPlayers([...selectedPlayers, player]);
       } else {
-        Alert.alert('Lỗi', 'Chỉ được chọn tối đa 4 người chơi');
+        showWarning('Lỗi', 'Chỉ được chọn tối đa 4 người chơi');
       }
     }
   };
 
   const startMatch = () => {
     if (selectedPlayers.length !== 4) {
-      Alert.alert('Lỗi', i18n.t('errorPlayerCount'));
+      showWarning('Lỗi', i18n.t('errorPlayerCount'));
       return;
     }
     if (!selectedConfig) {
-      Alert.alert('Lỗi', 'Vui lòng chọn cấu hình');
+      showWarning('Lỗi', 'Vui lòng chọn cấu hình');
       return;
     }
 
@@ -133,7 +133,7 @@ export const NewMatchScreen: React.FC = () => {
     // Validate all ranks are set
     const ranks = matchResults.map(r => r.rank).filter(r => r !== undefined);
     if (ranks.length !== 4 || new Set(ranks).size !== 4) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ hạng cho tất cả người chơi (1-4)');
+      showWarning('Lỗi', 'Vui lòng nhập đầy đủ hạng cho tất cả người chơi (1-4)');
       return;
     }
 
@@ -192,7 +192,7 @@ export const NewMatchScreen: React.FC = () => {
       ]);
     } catch (error) {
       console.error('Error saving match:', error);
-      Alert.alert('Lỗi', 'Không thể lưu trận đấu');
+      showWarning('Lỗi', 'Không thể lưu trận đấu');
     }
   };
 

@@ -19,7 +19,7 @@ import { ScoreTable } from '../components/ScoreTable';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { ScoringConfig } from '../types/models';
 import i18n from '../utils/i18n';
-
+import { showSuccess, showWarning } from '../utils/toast';
 export const ActiveMatchScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
@@ -44,12 +44,12 @@ export const ActiveMatchScreen: React.FC = () => {
 
     // Validate config
     if (editedConfig.baseRatioFirst <= editedConfig.baseRatioSecond) {
-      Alert.alert('Lỗi', 'Hệ số 1 phải lớn hơn hệ số 2');
+      showWarning('Lỗi', 'Hệ số 1 phải lớn hơn hệ số 2');
       return;
     }
 
     if (editedConfig.penaltyHeoDo <= editedConfig.penaltyHeoDen) {
-      Alert.alert('Lỗi', 'Phạt heo đỏ phải lớn hơn heo đen');
+      showWarning('Lỗi', 'Phạt heo đỏ phải lớn hơn heo đen');
       return;
     }
 
@@ -63,7 +63,7 @@ export const ActiveMatchScreen: React.FC = () => {
           onPress: () => {
             updateConfig(editedConfig);
             setShowConfigModal(false);
-            Alert.alert('Thành công', 'Đã cập nhật cấu hình');
+            showSuccess('Thành công', 'Đã cập nhật cấu hình');
           },
         },
       ]
@@ -82,10 +82,10 @@ export const ActiveMatchScreen: React.FC = () => {
       const { updateRoundScores } = require('../services/matchService');
       await updateRoundScores(activeMatch.id, roundId, scores);
       await refreshMatch();
-      Alert.alert('Thành công', 'Đã cập nhật điểm');
+      showSuccess('Thành công', 'Đã cập nhật điểm');
     } catch (error) {
       console.error('Error updating round:', error);
-      Alert.alert('Lỗi', 'Không thể cập nhật điểm');
+      showWarning('Lỗi', 'Không thể cập nhật điểm');
     }
   };
 
@@ -96,10 +96,10 @@ export const ActiveMatchScreen: React.FC = () => {
       const { deleteRound } = require('../services/matchService');
       await deleteRound(activeMatch.id, roundId);
       await refreshMatch();
-      Alert.alert('Thành công', 'Đã xóa ván');
+      showSuccess('Thành công', 'Đã xóa ván');
     } catch (error) {
       console.error('Error deleting round:', error);
-      Alert.alert('Lỗi', 'Không thể xóa ván');
+      showWarning('Lỗi', 'Không thể xóa ván');
     }
   };
 
@@ -184,7 +184,7 @@ export const ActiveMatchScreen: React.FC = () => {
         )}
       </View>
 
-      {/* Players Info */}
+      {/* Players Info
       <ScrollView style={styles.playersContainer}>
         <Text style={[styles.playersTitle, { color: theme.text }]}>Người Chơi</Text>
         {activeMatch.playerNames.map((name, index) => {
@@ -211,10 +211,10 @@ export const ActiveMatchScreen: React.FC = () => {
             </View>
           );
         })}
-      </ScrollView>
+      </ScrollView> */}
 
       {/* Action Buttons */}
-      <View style={styles.buttonContainer}>
+      <View style={[styles.buttonContainer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
         <TouchableOpacity
           style={[styles.button, styles.endButton, { backgroundColor: theme.error }]}
           onPress={handleEndMatch}
@@ -328,10 +328,10 @@ export const ActiveMatchScreen: React.FC = () => {
                   )}
                 </View>
 
-                {/* Phạt Thối */}
+                {/* Phạt Thối/Chồng */}
                 <View style={[styles.section, { backgroundColor: theme.card }]}>
                   <View style={styles.switchRow}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Phạt Thối</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Phạt Thối/Chồng</Text>
                     <Switch
                       value={editedConfig.enablePenalties}
                       onValueChange={(value) => updateConfigField('enablePenalties', value)}
@@ -358,6 +358,26 @@ export const ActiveMatchScreen: React.FC = () => {
                           style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                           value={editedConfig.penaltyHeoDo.toString()}
                           onChangeText={(text) => updateConfigField('penaltyHeoDo', parseInt(text) || 0)}
+                          keyboardType="numeric"
+                        />
+                      </View>
+
+                      <View style={styles.inputRow}>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>3 đôi thông:</Text>
+                        <TextInput
+                          style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                          value={editedConfig.penaltyBaDoiThong.toString()}
+                          onChangeText={(text) => updateConfigField('penaltyBaDoiThong', parseInt(text) || 0)}
+                          keyboardType="numeric"
+                        />
+                      </View>
+
+                      <View style={styles.inputRow}>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Tứ quý:</Text>
+                        <TextInput
+                          style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                          value={editedConfig.penaltyTuQuy.toString()}
+                          onChangeText={(text) => updateConfigField('penaltyTuQuy', parseInt(text) || 0)}
                           keyboardType="numeric"
                         />
                       </View>
@@ -390,17 +410,54 @@ export const ActiveMatchScreen: React.FC = () => {
                       </View>
 
                       <View style={styles.inputRow}>
-                        <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số chồng:</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Heo đỏ:</Text>
                         <TextInput
                           style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-                          value={editedConfig.chongHeoMultiplier.toString()}
-                          onChangeText={(text) => updateConfigField('chongHeoMultiplier', parseInt(text) || 0)}
+                          value={editedConfig.chatHeoRed.toString()}
+                          onChangeText={(text) => updateConfigField('chatHeoRed', parseInt(text) || 0)}
                           keyboardType="numeric"
                         />
                       </View>
                     </>
                   )}
                 </View>
+
+                {/* Đút 3 Tép */}
+                {/* <View style={[styles.section, { backgroundColor: theme.card }]}>
+                  <View style={styles.switchRow}>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Đút 3 Tép</Text>
+                    <Switch
+                      value={editedConfig.enableDutBaTep}
+                      onValueChange={(value) => updateConfigField('enableDutBaTep', value)}
+                      trackColor={{ false: theme.border, true: theme.primary }}
+                      thumbColor="#FFF"
+                    />
+                  </View>
+                  
+                  {editedConfig.enableDutBaTep && (
+                    <>
+                      <View style={styles.inputRow}>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Điểm đút:</Text>
+                        <TextInput
+                          style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                          value={editedConfig.dutBaTep.toString()}
+                          onChangeText={(text) => updateConfigField('dutBaTep', parseInt(text) || 0)}
+                          keyboardType="numeric"
+                        />
+                      </View>
+
+                      <View style={styles.inputRow}>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Phạt thối 3 tép:</Text>
+                        <TextInput
+                          style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                          value={editedConfig.penaltyBaTep.toString()}
+                          onChangeText={(text) => updateConfigField('penaltyBaTep', parseInt(text) || 0)}
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    </>
+                  )}
+                </View> */}
               </>
             )}
           </ScrollView>
@@ -441,7 +498,7 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     marginHorizontal: 8,
-    marginBottom: 12,
+    marginBottom: 100,
     borderRadius: 12,
     padding: 12,
   },
@@ -498,9 +555,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   buttonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    padding: 20,
+    padding: 16,
+    paddingBottom: 24,
     gap: 12,
+    borderTopWidth: 1,
   },
   button: {
     flex: 1,

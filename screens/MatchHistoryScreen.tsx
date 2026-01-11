@@ -16,7 +16,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Match } from '../types/models';
 import { getAllMatches, deleteMatch } from '../services/matchService';
 import i18n from '../utils/i18n';
-
+import { showSuccess, showWarning } from '../utils/toast';
 export const MatchHistoryScreen: React.FC = () => {
   const { theme } = useTheme();
   const [matches, setMatches] = useState<Match[]>([]);
@@ -57,7 +57,7 @@ export const MatchHistoryScreen: React.FC = () => {
               }
             } catch (error) {
               console.error('Error deleting match:', error);
-              Alert.alert('Lỗi', 'Không thể xóa trận đấu');
+              showWarning('Lỗi', 'Không thể xóa trận đấu');
             }
           },
         },
