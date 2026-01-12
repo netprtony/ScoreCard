@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, LayoutAnimation, Platform, UIManager, Image } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { Match, Round } from '../types/models';
+import { Match, Round, Player } from '../types/models';
 import { formatActionDescription, formatToiTrangAction } from '../utils/actionFormatter';
 import { showSuccess, showWarning } from '../utils/toast';
+import { getPlayerById } from '../services/playerService';
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -31,6 +32,19 @@ export const RoundDetailsScreen: React.FC = () => {
   });
   
   const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
+  const [players, setPlayers] = useState<{ [playerId: string]: Player }>({});
+
+  // Load player data for avatars
+  useEffect(() => {
+    const playerData: { [playerId: string]: Player } = {};
+    match.playerIds.forEach(id => {
+      const player = getPlayerById(id);
+      if (player) {
+        playerData[id] = player;
+      }
+    });
+    setPlayers(playerData);
+  }, [match.playerIds]);
 
   const toggleActionExpand = (actionId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -344,22 +358,32 @@ export const RoundDetailsScreen: React.FC = () => {
               })
               .sort((a, b) => a.rank - b.rank);
 
-            return sortedPlayers.map((player, idx) => (
-              <View key={player.id} style={[styles.rankResultRow, { borderBottomColor: theme.border }]}>
-                <View style={[styles.rankBadge, { backgroundColor: getRankColor(player.rank) }]}>
-                  <Text style={styles.rankBadgeText}>{player.rank}</Text>
-                </View>
-                <View style={styles.rankResultInfo}>
-                  <Text style={[styles.rankResultName, { color: theme.text }]}>{player.name}</Text>
-                  <Text style={[styles.rankResultLabel, { color: theme.textSecondary }]}>
-                    ({getRankLabel(player.rank)})
+            return sortedPlayers.map((player, idx) => {
+              const playerInfo = players[player.id];
+              return (
+                <View key={player.id} style={[styles.rankResultRow, { borderBottomColor: theme.border }]}>
+                  <View style={[styles.rankBadge, { backgroundColor: getRankColor(player.rank) }]}>
+                    <Text style={styles.rankBadgeText}>{player.rank}</Text>
+                  </View>
+                  <View style={[styles.playerAvatar, { backgroundColor: playerInfo?.color || theme.primary }]}>
+                    {playerInfo?.avatar ? (
+                      <Image source={{ uri: playerInfo.avatar }} style={styles.playerAvatarImage} />
+                    ) : (
+                      <Text style={styles.playerAvatarText}>{player.name.charAt(0).toUpperCase()}</Text>
+                    )}
+                  </View>
+                  <View style={styles.rankResultInfo}>
+                    <Text style={[styles.rankResultName, { color: playerInfo?.color || theme.text }]}>{player.name}</Text>
+                    <Text style={[styles.rankResultLabel, { color: theme.textSecondary }]}>
+                      ({getRankLabel(player.rank)})
+                    </Text>
+                  </View>
+                  <Text style={[styles.rankResultScore, { color: player.score >= 0 ? '#4CAF50' : '#F44336' }]}>
+                    {player.score >= 0 ? `+${player.score}` : player.score}
                   </Text>
                 </View>
-                <Text style={[styles.rankResultScore, { color: player.score >= 0 ? '#4CAF50' : '#F44336' }]}>
-                  {player.score >= 0 ? `+${player.score}` : player.score}
-                </Text>
-              </View>
-            ));
+              );
+            });
           })()}
         </View>
 
@@ -508,6 +532,24 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   rankBadgeText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  playerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  playerAvatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  playerAvatarText: {
     color: '#FFF',
     fontSize: 14,
     fontWeight: 'bold',

@@ -180,6 +180,8 @@ export interface MatchPlayerResult {
 export interface PlayerStats {
     playerId: string;
     playerName: string;
+    playerColor?: string;
+    playerAvatar?: string;
     totalMatches: number;
     totalScore: number;
     winCount: number;

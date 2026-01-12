@@ -6,19 +6,23 @@ export const getAllPlayerStats = (): PlayerStats[] => {
         `SELECT 
       p.id as player_id,
       p.name as player_name,
+      p.color as player_color,
+      p.avatar as player_avatar,
       COUNT(DISTINCT mr.match_id) as total_matches,
       COALESCE(SUM(mr.score_change), 0) as total_score,
       COALESCE(SUM(CASE WHEN mr.rank = 1 THEN 1 ELSE 0 END), 0) as win_count,
       COALESCE(SUM(CASE WHEN mr.killed_by IS NOT NULL AND mr.is_killed = 1 THEN 1 ELSE 0 END), 0) as kill_count
     FROM players p
     LEFT JOIN match_results mr ON p.id = mr.player_id
-    GROUP BY p.id, p.name
+    GROUP BY p.id, p.name, p.color, p.avatar
     ORDER BY total_score DESC`
     );
 
     return rows.map(row => ({
         playerId: row.player_id,
         playerName: row.player_name,
+        playerColor: row.player_color,
+        playerAvatar: row.player_avatar,
         totalMatches: row.total_matches,
         totalScore: row.total_score,
         winCount: row.win_count,
@@ -31,6 +35,8 @@ export const getPlayerStats = (playerId: string): PlayerStats | null => {
         `SELECT 
       p.id as player_id,
       p.name as player_name,
+      p.color as player_color,
+      p.avatar as player_avatar,
       COUNT(DISTINCT mr.match_id) as total_matches,
       COALESCE(SUM(mr.score_change), 0) as total_score,
       COALESCE(SUM(CASE WHEN mr.rank = 1 THEN 1 ELSE 0 END), 0) as win_count,
@@ -38,7 +44,7 @@ export const getPlayerStats = (playerId: string): PlayerStats | null => {
     FROM players p
     LEFT JOIN match_results mr ON p.id = mr.player_id
     WHERE p.id = ?
-    GROUP BY p.id, p.name`,
+    GROUP BY p.id, p.name, p.color, p.avatar`,
         [playerId]
     );
 
@@ -48,6 +54,8 @@ export const getPlayerStats = (playerId: string): PlayerStats | null => {
     return {
         playerId: row.player_id,
         playerName: row.player_name,
+        playerColor: row.player_color,
+        playerAvatar: row.player_avatar,
         totalMatches: row.total_matches,
         totalScore: row.total_score,
         winCount: row.win_count,

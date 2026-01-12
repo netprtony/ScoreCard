@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -70,13 +71,17 @@ export const StatisticsScreen: React.FC = () => {
       </View>
 
       <View style={styles.playerInfo}>
-        <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-          <Text style={styles.avatarText}>
-            {item.playerName.charAt(0).toUpperCase()}
-          </Text>
+        <View style={[styles.avatar, { backgroundColor: item.playerColor || theme.primary }]}>
+          {item.playerAvatar ? (
+            <Image source={{ uri: item.playerAvatar }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatarText}>
+              {item.playerName.charAt(0).toUpperCase()}
+            </Text>
+          )}
         </View>
         <View style={styles.nameContainer}>
-          <Text style={[styles.playerName, { color: theme.text }]} numberOfLines={1}>
+          <Text style={[styles.playerName, { color: item.playerColor || theme.text }]} numberOfLines={1}>
             {item.playerName}
           </Text>
           <Text style={[styles.winRate, { color: theme.textSecondary }]}>
@@ -285,6 +290,11 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 20,
     fontWeight: 'bold',
+  },
+  avatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   nameContainer: {
     flex: 1,

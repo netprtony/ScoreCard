@@ -11,6 +11,7 @@ import {
   Modal,
   Vibration,
   Animated,
+  Image,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useNavigation } from '@react-navigation/native';
@@ -387,7 +388,11 @@ export const RoundInputScreen: React.FC = () => {
             <View key={playerId} style={[styles.playerCard, { backgroundColor: theme.card }]}>
               <View style={styles.playerHeader}>
                 <View style={[styles.playerAvatar, { backgroundColor: playerColor }]}>
-                  <Text style={styles.playerAvatarText}>{playerName.charAt(0).toUpperCase()}</Text>
+                  {player?.avatar ? (
+                    <Image source={{ uri: player.avatar }} style={styles.playerAvatarImage} />
+                  ) : (
+                    <Text style={styles.playerAvatarText}>{playerName.charAt(0).toUpperCase()}</Text>
+                  )}
                 </View>
                 <Text style={[styles.playerName, { color: playerColor }]}>{playerName}</Text>
                 {playerActions.length > 0 && (
@@ -865,6 +870,7 @@ const styles = StyleSheet.create({
   playerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   playerAvatar: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   playerAvatarText: { color: '#FFF', fontSize: 14, fontWeight: 'bold' },
+  playerAvatarImage: { width: 32, height: 32, borderRadius: 16 },
   playerName: { fontSize: 16, fontWeight: 'bold', flex: 1 },
   actionBadge: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   actionBadgeText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },

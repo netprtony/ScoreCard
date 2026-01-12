@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,14 @@ import {
   Modal,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
-import { Match } from '../types/models';
+import { Match, Player } from '../types/models';
 import { getCompletedMatches, deleteMatch } from '../services/matchService';
+import { getPlayerById } from '../services/playerService';
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
 export const MatchHistoryScreen: React.FC = () => {
@@ -22,6 +24,23 @@ export const MatchHistoryScreen: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [players, setPlayers] = useState<{ [playerId: string]: Player }>({});
+
+  // Load player data for avatars when matches change
+  useEffect(() => {
+    const playerData: { [playerId: string]: Player } = {};
+    matches.forEach(match => {
+      match.playerIds.forEach(id => {
+        if (!playerData[id]) {
+          const player = getPlayerById(id);
+          if (player) {
+            playerData[id] = player;
+          }
+        }
+      });
+    });
+    setPlayers(playerData);
+  }, [matches]);
 
   useFocusEffect(
     useCallback(() => {
@@ -181,14 +200,23 @@ export const MatchHistoryScreen: React.FC = () => {
         </View>
 
         <View style={styles.playersRow}>
-          {playerResults.map((result, index) => (
-            <View key={result.playerId} style={styles.playerChip}>
-              <View style={[styles.rankDot, { backgroundColor: getRankColor(index + 1, theme) }]} />
-              <Text style={[styles.playerChipText, { color: theme.textSecondary }]} numberOfLines={1}>
-                {result.playerName}
-              </Text>
-            </View>
-          ))}
+          {playerResults.map((result, index) => {
+            const playerInfo = players[result.playerId];
+            return (
+              <View key={result.playerId} style={styles.playerChip}>
+                <View style={[styles.playerChipAvatar, { backgroundColor: playerInfo?.color || getRankColor(index + 1, theme) }]}>
+                  {playerInfo?.avatar ? (
+                    <Image source={{ uri: playerInfo.avatar }} style={styles.playerChipAvatarImage} />
+                  ) : (
+                    <Text style={styles.playerChipAvatarText}>{result.playerName.charAt(0).toUpperCase()}</Text>
+                  )}
+                </View>
+                <Text style={[styles.playerChipText, { color: playerInfo?.color || theme.textSecondary }]} numberOfLines={1}>
+                  {result.playerName}
+                </Text>
+              </View>
+            );
+          })}
         </View>
 
         {totalSum !== 0 && (
@@ -298,9 +326,12 @@ export const MatchHistoryScreen: React.FC = () => {
               {Object.entries(selectedMatch.totalScores)
                 .map(([playerId, score]) => {
                   const playerIndex = selectedMatch.playerIds.indexOf(playerId);
+                  const playerInfo = players[playerId];
                   return {
                     playerId,
                     playerName: selectedMatch.playerNames[playerIndex],
+                    playerColor: playerInfo?.color,
+                    playerAvatar: playerInfo?.avatar,
                     score
                   };
                 })
@@ -309,8 +340,14 @@ export const MatchHistoryScreen: React.FC = () => {
                   <View key={player.playerId} style={[styles.playerScoreCard, { backgroundColor: theme.card }]}>
                     <View style={styles.playerScoreHeader}>
                       <View style={styles.playerScoreRank}>
-                        <View style={[styles.rankDot, { backgroundColor: getRankColor(index + 1, theme) }]} />
-                        <Text style={[styles.playerScoreName, { color: theme.text }]}>
+                        <View style={[styles.modalPlayerAvatar, { backgroundColor: player.playerColor || getRankColor(index + 1, theme) }]}>
+                          {player.playerAvatar ? (
+                            <Image source={{ uri: player.playerAvatar }} style={styles.modalPlayerAvatarImage} />
+                          ) : (
+                            <Text style={styles.modalPlayerAvatarText}>{player.playerName.charAt(0).toUpperCase()}</Text>
+                          )}
+                        </View>
+                        <Text style={[styles.playerScoreName, { color: player.playerColor || theme.text }]}>
                           {player.playerName}
                         </Text>
                       </View>
@@ -483,6 +520,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     flex: 1,
   },
+  playerChipAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playerChipAvatarImage: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  playerChipAvatarText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
   warningBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -588,6 +642,23 @@ const styles = StyleSheet.create({
   },
   playerScoreValue: {
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  modalPlayerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalPlayerAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  modalPlayerAvatarText: {
+    color: '#FFF',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   roundCard: {
