@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -14,10 +14,29 @@ import { RoundDetailsScreen } from '../screens/RoundDetailsScreen';
 import { MatchHistoryScreen } from '../screens/MatchHistoryScreen';
 import { StatisticsScreen } from '../screens/StatisticsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { SplashScreen } from '../screens/SplashScreen';
+import { WelcomeScreen } from '../screens/WelcomeScreen';
+import { TermsPrivacyScreen } from '../screens/TermsPrivacyScreen';
+import { getSettings } from '../services/settingsService';
 import i18n from '../utils/i18n';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+// Stack Navigator for Onboarding Flow
+const OnboardingStack: React.FC = () => {
+  return (
+    <Stack.Navigator 
+      id="OnboardingStack" 
+      screenOptions={{ headerShown: false }}
+      initialRouteName="Splash"
+    >
+      <Stack.Screen name="Splash" component={SplashScreen} />
+      <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} />
+    </Stack.Navigator>
+  );
+};
 
 // Stack Navigator for Match Flow
 const MatchStack: React.FC = () => {
@@ -33,44 +52,14 @@ const MatchStack: React.FC = () => {
   );
 };
 
-export const AppNavigator: React.FC = () => {
+// Main Tab Navigator
+const MainTabNavigator: React.FC = () => {
   const { theme, isDark } = useTheme();
 
   return (
-    <NavigationContainer
-      theme={{
-        dark: isDark,
-        colors: {
-          primary: theme.primary,
-          background: theme.background,
-          card: theme.surface,
-          text: theme.text,
-          border: theme.border,
-          notification: theme.primary,
-        },
-        fonts: {
-          regular: {
-            fontFamily: 'System',
-            fontWeight: '400',
-          },
-          medium: {
-            fontFamily: 'System',
-            fontWeight: '500',
-          },
-          bold: {
-            fontFamily: 'System',
-            fontWeight: '700',
-          },
-          heavy: {
-            fontFamily: 'System',
-            fontWeight: '900',
-          },
-        },
-      }}
-    >
-      <Tab.Navigator
-        id="MainTabs"
-        screenOptions={({ route }) => ({
+    <Tab.Navigator
+      id="MainTabs"
+      screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             let iconName: keyof typeof Ionicons.glyphMap = 'help';
 
@@ -117,12 +106,75 @@ export const AppNavigator: React.FC = () => {
           component={StatisticsScreen}
           options={{ tabBarLabel: i18n.t('statistics') }}
         />
-        <Tab.Screen
-          name="Settings"
-          component={SettingsScreen}
-          options={{ tabBarLabel: i18n.t('settings') }}
-        />
-      </Tab.Navigator>
+        <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: i18n.t('settings') }} />
+    </Tab.Navigator>
+  );
+};
+
+// Root Navigator with conditional routing
+export const AppNavigator: React.FC = () => {
+  const { theme, isDark } = useTheme();
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
+
+  const checkOnboardingStatus = () => {
+    const settings = getSettings();
+    setHasCompletedOnboarding(settings.hasCompletedOnboarding);
+  };
+
+  useEffect(() => {
+    // Check onboarding status on mount
+    checkOnboardingStatus();
+
+    // Re-check when app comes to foreground (for when settings change)
+    const interval = setInterval(checkOnboardingStatus, 500);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  if (hasCompletedOnboarding === null) {
+    // Loading state
+    return null;
+  }
+
+  return (
+    <NavigationContainer
+      theme={{
+        dark: isDark,
+        colors: {
+          primary: theme.primary,
+          background: theme.background,
+          card: theme.surface,
+          text: theme.text,
+          border: theme.border,
+          notification: theme.primary,
+        },
+        fonts: {
+          regular: {
+            fontFamily: 'System',
+            fontWeight: '400',
+          },
+          medium: {
+            fontFamily: 'System',
+            fontWeight: '500',
+          },
+          bold: {
+            fontFamily: 'System',
+            fontWeight: '700',
+          },
+          heavy: {
+            fontFamily: 'System',
+            fontWeight: '900',
+          },
+        },
+      }}
+    >
+      <Stack.Navigator id="RootStack" screenOptions={{ headerShown: false }}>
+        {!hasCompletedOnboarding ? (
+          <Stack.Screen name="Onboarding" component={OnboardingStack} />
+        ) : (
+          <Stack.Screen name="MainApp" component={MainTabNavigator} />
+        )}
+      </Stack.Navigator>
     </NavigationContainer>
   );
 };

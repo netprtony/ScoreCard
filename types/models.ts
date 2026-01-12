@@ -194,6 +194,8 @@ export interface AppSettings {
     language: 'vi' | 'en';
     keepScreenAwake: boolean;
     backgroundImage?: string;
+    hasCompletedOnboarding: boolean;
+    hasAcceptedTerms: boolean;
 }
 
 // Countdown timer state

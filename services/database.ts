@@ -131,14 +131,34 @@ export const initDatabase = (): void => {
                 theme TEXT NOT NULL,
                 language TEXT NOT NULL,
                 keep_screen_awake INTEGER NOT NULL,
-                background_image TEXT
+                background_image TEXT,
+                has_completed_onboarding INTEGER NOT NULL DEFAULT 0,
+                has_accepted_terms INTEGER NOT NULL DEFAULT 0
             );`
         );
 
+        // Migration: Add onboarding columns to app_settings if they don't exist (for existing databases)
+        try {
+            const columns = db.getAllSync('PRAGMA table_info(app_settings)') as any[];
+            const columnNames = columns.map((col: any) => col.name);
+
+            if (!columnNames.includes('has_completed_onboarding')) {
+                db.execSync('ALTER TABLE app_settings ADD COLUMN has_completed_onboarding INTEGER NOT NULL DEFAULT 0');
+                console.log('Added has_completed_onboarding column');
+            }
+
+            if (!columnNames.includes('has_accepted_terms')) {
+                db.execSync('ALTER TABLE app_settings ADD COLUMN has_accepted_terms INTEGER NOT NULL DEFAULT 0');
+                console.log('Added has_accepted_terms column');
+            }
+        } catch (error) {
+            console.log('Onboarding columns migration:', error);
+        }
+
         // Insert default settings if not exists
         db.runSync(
-            `INSERT OR IGNORE INTO app_settings (id, theme, language, keep_screen_awake)
-            VALUES (1, 'system', 'vi', 0);`
+            `INSERT OR IGNORE INTO app_settings (id, theme, language, keep_screen_awake, has_completed_onboarding, has_accepted_terms)
+            VALUES (1, 'system', 'vi', 0, 0, 0);`
         );
 
         // Insert default game types
@@ -310,6 +330,32 @@ export const executeUpdate = (
 
 export const getDatabase = async () => {
     return db;
+};
+
+// Clear all data and reset database (for testing fresh install)
+export const clearDatabase = (): void => {
+    try {
+        console.log('Clearing database...');
+
+        // Drop all tables
+        db.execSync('DROP TABLE IF EXISTS players');
+        db.execSync('DROP TABLE IF EXISTS matches');
+        db.execSync('DROP TABLE IF EXISTS rounds');
+        db.execSync('DROP TABLE IF EXISTS player_actions');
+        db.execSync('DROP TABLE IF EXISTS game_types');
+        db.execSync('DROP TABLE IF EXISTS scoring_configs');
+        db.execSync('DROP TABLE IF EXISTS app_settings');
+
+        console.log('All tables dropped');
+
+        // Reinitialize database
+        initDatabase();
+
+        console.log('Database reinitialized - ready for fresh start!');
+    } catch (error) {
+        console.error('Error clearing database:', error);
+        throw error;
+    }
 };
 
 export default db;

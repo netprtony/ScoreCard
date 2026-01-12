@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Linking,
   Modal,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
@@ -241,6 +242,39 @@ export const SettingsScreen: React.FC = () => {
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={24} color={theme.textSecondary} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+            <TouchableOpacity 
+              style={styles.option}
+              onPress={async () => {
+                Alert.alert(
+                  'Reset App',
+                  'Xóa tất cả dữ liệu và reset về trạng thái ban đầu? (Dùng để test onboarding)',
+                  [
+                    { text: 'Hủy', style: 'cancel' },
+                    {
+                      text: 'Reset',
+                      style: 'destructive',
+                      onPress: async () => {
+                        const { clearDatabase } = await import('../services/database');
+                        clearDatabase();
+                        if (typeof window !== 'undefined') {
+                          window.location.reload();
+                        }
+                      }
+                    }
+                  ]
+                );
+              }}
+            >
+              <View style={styles.optionLeft}>
+                <Ionicons name="refresh" size={24} color={theme.error} />
+                <Text style={[styles.optionText, { color: theme.error }]}>
+                  Reset App (Test Only)
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
