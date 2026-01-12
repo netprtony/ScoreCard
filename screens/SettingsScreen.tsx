@@ -218,7 +218,7 @@ export const SettingsScreen: React.FC = () => {
                     {i18n.t('version')}
                   </Text>
                   <Text style={[styles.optionSubtext, { color: theme.textSecondary }]}>
-                    1.0.0
+                    1.0.2
                   </Text>
                 </View>
               </View>
@@ -230,7 +230,7 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.optionLeft}>
                 <Ionicons name="shield-checkmark" size={24} color={theme.text} />
                 <Text style={[styles.optionText, { color: theme.text }]}>
-                  {i18n.t('privacy')}
+                  {i18n.t('privacyPolicy')}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={24} color={theme.textSecondary} />

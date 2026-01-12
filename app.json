@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "ScoreCard",
-    "slug": "ScoreCard",
-    "version": "1.0.0",
+    "name": "Koya Score",
+    "slug": "KoyaScore",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon3.png",
     "userInterfaceStyle": "dark",
@@ -37,7 +37,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "3f038d64-1f34-4a05-8374-80d1d35062b6"
+        "projectId": "af01253e-afef-4bb5-9ff4-9a407733cf46"
       }
     }
   }
