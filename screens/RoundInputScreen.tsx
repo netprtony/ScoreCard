@@ -21,6 +21,7 @@ import { useMatch } from '../contexts/MatchContext';
 import { Player, PlayerAction, PlayerActionType, PenaltyType, ChatHeoType } from '../types/models';
 import { getPlayerById } from '../services/playerService';
 import { calculateRoundScores, validateScores } from '../utils/scoringEngine';
+import { formatActionDescription, getActionIcon } from '../utils/actionFormatter';
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
 type PenaltyModalStep = 'select_type' | 'heo' | 'chong' | 'giet' | 'dut_ba_tep';
@@ -75,6 +76,56 @@ export const RoundInputScreen: React.FC = () => {
     }
   }, [activeMatch]);
 
+  // Exit confirmation when there are unsaved changes
+  useEffect(() => {
+    const hasChanges = actions.length > 0 || Object.keys(rankings).length > 0;
+    
+    // Handle back button navigation
+    const unsubscribeBeforeRemove = navigation.addListener('beforeRemove', (e: any) => {
+      // Allow navigation if saving or no changes
+      if (isSavingRef.current || !hasChanges) {
+        return;
+      }
+
+      // Prevent default behavior of leaving the screen
+      e.preventDefault();
+
+      // Show confirmation dialog
+      Alert.alert(
+        'Thoát nhập ván?',
+        'Bạn có hành động hoặc xếp hạng chưa lưu. Bạn có chắc muốn thoát?',
+        [
+          { text: 'Ở lại', style: 'cancel', onPress: () => {} },
+          {
+            text: 'Thoát',
+            style: 'destructive',
+            onPress: () => navigation.dispatch(e.data.action),
+          },
+        ]
+      );
+    });
+
+    // Handle tab navigation (when user taps on a different tab)
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      // Only show alert if there are unsaved changes and not currently saving
+      if (hasChanges && !isSavingRef.current) {
+        // Screen is about to lose focus (tab switch), show warning
+        setTimeout(() => {
+          Alert.alert(
+            'Cảnh báo',
+            'Bạn có hành động hoặc xếp hạng chưa lưu. Vui lòng quay lại để lưu.',
+            [{ text: 'OK' }]
+          );
+        }, 100);
+      }
+    });
+
+    return () => {
+      unsubscribeBeforeRemove();
+      unsubscribeBlur();
+    };
+  }, [navigation, actions, rankings]);
+
   if (!activeMatch) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -90,6 +141,9 @@ export const RoundInputScreen: React.FC = () => {
   // Shake animation for duplicate rank
   const shakeAnim = useRef(new Animated.Value(0)).current;
   
+  // Track if we're saving to bypass exit confirmation
+  const isSavingRef = useRef(false);
+  
   const triggerShake = () => {
     Vibration.vibrate(100);
     Animated.sequence([
@@ -102,10 +156,31 @@ export const RoundInputScreen: React.FC = () => {
   };
 
   const setPlayerRank = (playerId: string, rank: 1 | 2 | 3 | 4) => {
-    // Toggle: if already has this rank, remove it
+    // Toggle: if already has this rank, remove it AND its pair to avoid auto-rank conflict
     if (rankings[playerId] === rank) {
-      const { [playerId]: removed, ...rest } = rankings;
-      setRankings(rest as { [playerId: string]: 1 | 2 | 3 | 4 | undefined });
+      const newRankings = { ...rankings };
+      delete newRankings[playerId];
+      
+      // Also remove paired rank to prevent auto-rank from triggering
+      // Rank 1 or 2 → clear both 1 and 2
+      // Rank 3 or 4 → clear both 3 and 4
+      if (rank === 1 || rank === 2) {
+        // Find and remove the player with rank 1 or 2
+        Object.entries(rankings).forEach(([id, r]) => {
+          if ((r === 1 || r === 2) && id !== playerId) {
+            delete newRankings[id];
+          }
+        });
+      } else if (rank === 3 || rank === 4) {
+        // Find and remove the player with rank 3 or 4
+        Object.entries(rankings).forEach(([id, r]) => {
+          if ((r === 3 || r === 4) && id !== playerId) {
+            delete newRankings[id];
+          }
+        });
+      }
+      
+      setRankings(newRankings as { [playerId: string]: 1 | 2 | 3 | 4 | undefined });
       if (toiTrangWinner === playerId) {
         setToiTrangWinner(undefined);
       }
@@ -127,6 +202,31 @@ export const RoundInputScreen: React.FC = () => {
       setToiTrangWinner(undefined);
     }
   };
+
+  // Auto-rank last player when 3 out of 4 are ranked
+  useEffect(() => {
+    if (!activeMatch) return;
+
+    const rankedPlayers = Object.entries(rankings);
+    // Only proceed if we have exactly 3 players ranked
+    if (rankedPlayers.length === 3) {
+      const rankedPlayerIds = rankedPlayers.map(([id]) => id);
+      const unrankedPlayer = activeMatch.playerIds.find(id => !rankedPlayerIds.includes(id));
+      
+      if (unrankedPlayer) {
+        // Find which rank is missing (1, 2, 3, or 4)
+        const assignedRanks = rankedPlayers.map(([, rank]) => rank);
+        const allRanks = [1, 2, 3, 4] as const;
+        const missingRank = allRanks.find(r => !assignedRanks.includes(r));
+        
+        if (missingRank) {
+          // Auto-assign the missing rank to the unranked player
+          setRankings(prev => ({ ...prev, [unrankedPlayer]: missingRank }));
+          showSuccess('Tự động xếp hạng', `Đã xếp hạng ${missingRank} cho người chơi còn lại`);
+        }
+      }
+    }
+  }, [rankings, activeMatch]);
 
   const toggleToiTrang = (playerId: string) => {
     if (rankings[playerId] !== 1) {
@@ -166,12 +266,8 @@ export const RoundInputScreen: React.FC = () => {
   };
 
   const getAvailableTargets = () => {
-    // For Giết: show ALL players except current player (no rank requirement)
-    if (penaltyType === 'giet') {
-      return activeMatch.playerIds.filter(id => id !== selectedPlayer);
-    }
-    // For Heo/Chồng: only players who have ranks
-    return activeMatch.playerIds.filter(id => id !== selectedPlayer && rankings[id] !== undefined);
+    // Show ALL players except current player (no rank requirement)
+    return activeMatch.playerIds.filter(id => id !== selectedPlayer);
   };
 
   const openGietModal = (playerId: string) => {
@@ -259,6 +355,22 @@ export const RoundInputScreen: React.FC = () => {
       // Auto-assign ranks: Victim = 4 (can have multiple rank 4)
       const newRankings = { ...rankings };
       newRankings[gietTarget] = 4;
+      
+      // Check if this is a double kill (2 players with rank 4)
+      const rank4Players = Object.entries(newRankings).filter(([, r]) => r === 4);
+      if (rank4Players.length === 2) {
+        // Double kill: auto-assign rank 2 to the remaining player
+        const killedPlayerIds = rank4Players.map(([id]) => id);
+        const remainingPlayer = activeMatch.playerIds.find(
+          id => id !== selectedPlayer && !killedPlayerIds.includes(id)
+        );
+        
+        if (remainingPlayer) {
+          newRankings[remainingPlayer] = 2;
+          showSuccess('Tự động xếp hạng', 'Đã xếp hạng 2 cho người chơi còn lại');
+        }
+      }
+      
       setRankings(newRankings);
       
       // Note: Dealer must manually assign:
@@ -340,12 +452,16 @@ export const RoundInputScreen: React.FC = () => {
     };
 
     try {
+      // Set flag to bypass exit confirmation
+      isSavingRef.current = true;
       addRound(roundData);
       showSuccess('Thành công', 'Đã lưu ván đấu');
       navigation.goBack();
     } catch (error) {
       console.error('Error saving round:', error);
       showWarning('Lỗi', 'Không thể lưu ván đấu');
+      // Reset flag if save failed
+      isSavingRef.current = false;
     }
   };
 
@@ -361,6 +477,41 @@ export const RoundInputScreen: React.FC = () => {
 
   const getPlayerActions = (playerId: string) => {
     return actions.filter(a => a.actorId === playerId);
+  };
+
+  const deleteAction = (actionId: string) => {
+    Alert.alert(
+      'Xóa hành động',
+      'Bạn có chắc muốn xóa hành động này?',
+      [
+        { text: i18n.t('cancel'), style: 'cancel' },
+        {
+          text: i18n.t('delete'),
+          style: 'destructive',
+          onPress: () => {
+            // If it's a giet action, also remove the rank 4 for victim
+            const actionToDelete = actions.find(a => a.id === actionId);
+            if (actionToDelete?.actionType === 'giet' && actionToDelete.targetId) {
+              const newRankings = { ...rankings };
+              delete newRankings[actionToDelete.targetId];
+              setRankings(newRankings as { [playerId: string]: 1 | 2 | 3 | 4 | undefined });
+            }
+            setActions(actions.filter(a => a.id !== actionId));
+            showSuccess('Đã xóa', 'Đã xóa hành động');
+          },
+        },
+      ]
+    );
+  };
+
+  const getActionDescription = (action: PlayerAction) => {
+    const actorIndex = activeMatch.playerIds.indexOf(action.actorId);
+    const actorName = activeMatch.playerNames[actorIndex] || 'Unknown';
+    const targetIndex = action.targetId ? activeMatch.playerIds.indexOf(action.targetId) : -1;
+    const targetName = targetIndex >= 0 ? activeMatch.playerNames[targetIndex] : '';
+    
+    const formatted = formatActionDescription(action, actorName, targetName, 0);
+    return formatted;
   };
 
   return (
@@ -462,8 +613,8 @@ export const RoundInputScreen: React.FC = () => {
                 </TouchableOpacity>
               )}
 
-              {/* Penalty Button - Only if not Tới Trắng and has rank */}
-              {!toiTrangWinner && rank && (
+              {/* Penalty Button - Always show unless player is Tới Trắng winner */}
+              {toiTrangWinner !== playerId && (
                 <TouchableOpacity
                   style={[styles.penaltyButton, { backgroundColor: theme.success }]}
                   onPress={() => openPenaltyModal(playerId)}
@@ -475,6 +626,41 @@ export const RoundInputScreen: React.FC = () => {
             </View>
           );
         })}
+
+        {/* Actions List Section */}
+        {actions.length > 0 && (
+          <View style={[styles.actionsListSection, { backgroundColor: theme.card }]}>
+            <View style={styles.actionsListHeader}>
+              <Text style={[styles.actionsListTitle, { color: theme.text }]}>
+                📋 Danh sách hành động ({actions.length})
+              </Text>
+            </View>
+            {actions.map((action, index) => {
+              const formatted = getActionDescription(action);
+              return (
+                <View key={action.id} style={[styles.actionListItem, { borderBottomColor: theme.border }]}>
+                  <Text style={styles.actionListIcon}>{formatted.icon}</Text>
+                  <View style={styles.actionListContent}>
+                    <Text style={[styles.actionListText, { color: theme.text }]} numberOfLines={2}>
+                      {formatted.text}
+                    </Text>
+                    {formatted.details ? (
+                      <Text style={[styles.actionListDetails, { color: theme.textSecondary }]}>
+                        {formatted.details}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.actionDeleteButton, { backgroundColor: theme.error }]}
+                    onPress={() => deleteAction(action.id)}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#FFF" />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
 
       <TouchableOpacity
@@ -915,4 +1101,14 @@ const styles = StyleSheet.create({
   penaltyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   penaltyLabel: { fontSize: 14, fontWeight: '600' },
   penaltyCountRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  // Action list styles
+  actionsListSection: { borderRadius: 10, padding: 12, marginTop: 12, marginBottom: 8 },
+  actionsListHeader: { marginBottom: 12 },
+  actionsListTitle: { fontSize: 16, fontWeight: 'bold' },
+  actionListItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, gap: 10 },
+  actionListIcon: { fontSize: 24 },
+  actionListContent: { flex: 1 },
+  actionListText: { fontSize: 14, fontWeight: '500' },
+  actionListDetails: { fontSize: 12, marginTop: 2 },
+  actionDeleteButton: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
 });

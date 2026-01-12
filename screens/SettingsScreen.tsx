@@ -9,6 +9,7 @@ import {
   Switch,
   SafeAreaView,
   Linking,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
@@ -21,6 +22,7 @@ import appJson from '../app.json';
 export const SettingsScreen: React.FC = () => {
   const { theme, themeMode, setThemeMode } = useTheme();
   const [settings, setSettingsState] = useState<AppSettings | null>(null);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -228,7 +230,10 @@ export const SettingsScreen: React.FC = () => {
 
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-            <TouchableOpacity style={styles.option}>
+            <TouchableOpacity 
+              style={styles.option}
+              onPress={() => setShowPrivacyModal(true)}
+            >
               <View style={styles.optionLeft}>
                 <Ionicons name="shield-checkmark" size={24} color={theme.text} />
                 <Text style={[styles.optionText, { color: theme.text }]}>
@@ -246,6 +251,100 @@ export const SettingsScreen: React.FC = () => {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Privacy Policy Modal */}
+      <Modal
+        visible={showPrivacyModal}
+        animationType="slide"
+        onRequestClose={() => setShowPrivacyModal(false)}
+      >
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Privacy Policy</Text>
+            <TouchableOpacity onPress={() => setShowPrivacyModal(false)}>
+              <Ionicons name="close" size={28} color={theme.text} />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            <Text style={[styles.lastUpdated, { color: theme.textSecondary }]}>
+              Last updated: 12/01/2026
+            </Text>
+
+            <Text style={[styles.policyText, { color: theme.text }]}>
+              The Koya Score application ("App", "we") respects and is committed to protecting user privacy. This Privacy Policy explains how information is handled when you use the App.
+            </Text>
+
+            <Text style={[styles.policyTitle, { color: theme.text }]}>
+              1. Purpose of the App
+            </Text>
+            <Text style={[styles.policyText, { color: theme.text }]}>
+              Koya Score is a score tracking application for popular card games in Vietnam, including Poker, Tiến Lên, Sắc Tê, Phỏm, and other recreational card games.
+              {"\n"}{"\n"}
+              The App is for entertainment purposes only and does not support, encourage, or involve gambling or real-money activities.
+            </Text>
+
+            <Text style={[styles.policyTitle, { color: theme.text }]}>
+              2. Information Collection
+            </Text>
+
+            <Text style={[styles.policyText, { color: theme.text }]}>
+              The App does not require account registration and does not directly collect personal information such as name, email, phone number, or address.
+              {"\n"}{"\n"}
+              All score data and game history are stored locally on the user's device.
+            </Text>
+
+            <Text style={[styles.policyText, { color: theme.text }]}>
+              The App uses third-party advertising services (such as Google AdMob). These services may collect non-personal information, including Advertising ID, device information, and anonymized usage data, for the purpose of displaying and improving advertisements.
+            </Text>
+
+            <Text style={[styles.policyTitle, { color: theme.text }]}>
+              3. Use of Information
+            </Text>
+            <Text style={[styles.policyText, { color: theme.text }]}>
+              Information (if any) is used solely to display advertisements, improve app performance, and ensure stable operation. We do not sell or share personal data with third parties, except as required for advertising services.
+            </Text>
+
+            <Text style={[styles.policyTitle, { color: theme.text }]}>
+              4. Data Storage and Security
+            </Text>
+            <Text style={[styles.policyText, { color: theme.text }]}>
+              All game data is stored locally on the user's device. We do not store user data on external servers. Users may delete all data by clearing app data or uninstalling the App.
+            </Text>
+
+            <Text style={[styles.policyTitle, { color: theme.text }]}>
+              5. Children
+            </Text>
+            <Text style={[styles.policyText, { color: theme.text }]}>
+              The App is not intended for users under the age of 18. We do not knowingly collect personal information from children.
+            </Text>
+
+            <Text style={[styles.policyTitle, { color: theme.text }]}>
+              6. Third-Party Links
+            </Text>
+            <Text style={[styles.policyText, { color: theme.text }]}>
+              The App may display advertisements or links to third-party websites. We are not responsible for the content or privacy practices of these third parties.
+            </Text>
+
+            <Text style={[styles.policyTitle, { color: theme.text }]}>
+              7. Policy Updates
+            </Text>
+            <Text style={[styles.policyText, { color: theme.text }]}>
+              This Privacy Policy may be updated from time to time. Any changes will be reflected within the App or on its Google Play listing.
+            </Text>
+
+            <Text style={[styles.policyTitle, { color: theme.text }]}>
+              8. Contact
+            </Text>
+            <Text style={[styles.policyText, { color: theme.text }]}>
+              If you have any questions regarding this Privacy Policy, please contact:
+              {"\n"}{"\n"}
+              📧 Email: huynhvikhang6a13@gmail.com{"\n"}{"\n"}
+            </Text>
+          </ScrollView>
+
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -307,5 +406,45 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  lastUpdated: {
+    fontSize: 12,
+    marginBottom: 20,
+    fontStyle: 'italic',
+  },
+  policyTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  policySubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  policyText: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 12,
   },
 });

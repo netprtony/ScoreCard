@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
+import { useMatch } from '../contexts/MatchContext';
 import { Match, Player } from '../types/models';
 import { getCompletedMatches, deleteMatch } from '../services/matchService';
 import { getPlayerById } from '../services/playerService';
@@ -21,6 +22,7 @@ import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
 export const MatchHistoryScreen: React.FC = () => {
   const { theme } = useTheme();
+  const { resumeMatch } = useMatch();
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -88,6 +90,31 @@ export const MatchHistoryScreen: React.FC = () => {
   const openMatchDetail = (match: Match) => {
     setSelectedMatch(match);
     setShowDetailModal(true);
+  };
+
+  const handleContinueMatch = (match: Match) => {
+    Alert.alert(
+      'Tiếp tục trận đấu',
+      'Bạn có chắc muốn tiếp tục trận đấu này? Trận đấu sẽ trở thành trận đang diễn ra.',
+      [
+        { text: i18n.t('cancel'), style: 'cancel' },
+        {
+          text: 'Tiếp tục',
+          onPress: () => {
+            try {
+              resumeMatch(match.id);
+              setShowDetailModal(false);
+              setSelectedMatch(null);
+              loadMatches();
+              showSuccess('Thành công', 'Đã tiếp tục trận đấu');
+            } catch (error) {
+              console.error('Error continuing match:', error);
+              showWarning('Lỗi', 'Không thể tiếp tục trận đấu');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const formatDate = (timestamp: number) => {
@@ -317,6 +344,15 @@ export const MatchHistoryScreen: React.FC = () => {
                   </Text>
                 </View>
               </View>
+
+              {/* Continue Match Button */}
+              <TouchableOpacity
+                style={[styles.continueButton, { backgroundColor: theme.success }]}
+                onPress={() => handleContinueMatch(selectedMatch)}
+              >
+                <Ionicons name="play" size={24} color="#FFF" />
+                <Text style={styles.continueButtonText}>Tiếp tục trận đấu</Text>
+              </TouchableOpacity>
 
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
                 Kết quả cuối cùng
@@ -593,6 +629,20 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
+  },
+  continueButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 16,
+    gap: 10,
+  },
+  continueButtonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   sectionTitle: {
     fontSize: 18,
