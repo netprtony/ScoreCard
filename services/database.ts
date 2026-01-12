@@ -267,6 +267,12 @@ export const initDatabase = (): void => {
                 db.execSync('ALTER TABLE players ADD COLUMN color TEXT');
             }
 
+            // Add avatar column if missing
+            if (!playersColumnNames.includes('avatar')) {
+                console.log('Migrating players table: adding avatar column');
+                db.execSync('ALTER TABLE players ADD COLUMN avatar TEXT');
+            }
+
             console.log('Players table migration completed successfully');
         } catch (migrationError) {
             console.error('Players table migration error:', migrationError);

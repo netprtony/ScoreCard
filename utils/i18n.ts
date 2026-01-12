@@ -2,6 +2,9 @@ import { I18n } from 'i18n-js';
 
 const translations = {
     vi: {
+        // Common
+        type: 'Loại',
+        calculateAndSave: 'Tính điểm và lưu',
         // Navigation
         players: 'Người chơi',
         matches: 'Trận đấu',
@@ -34,11 +37,13 @@ const translations = {
 
         // Scoring Rules
         toiTrang: 'Tới trắng',
-        killed: 'Bị giết',
+        killed: 'Người bị giết',
         killedBy: 'Giết bởi',
-        penalties: 'Phạt',
+        kill: 'Giết',
+        penalty: 'Phạt ai đó',
         heoDen: 'Heo đen',
         heoDo: 'Heo đỏ',
+        heo: 'Heo',
         baTep: '3 tép',
         baDoiThong: '3 đôi thông',
         tuQuy: 'Tứ quý',
@@ -127,15 +132,49 @@ const translations = {
 
         // About
         appName: 'Tiến Lên Score',
-        appDescription: 'Ứng dụng tính điểm cho game bài Tiến Lên',
+        appDescription: 'Ứng dụng tính điểm cho các loại bài phổ biến',
         version: 'Phiên bản',
         developer: 'Phát triển bởi',
 
         // Privacy
         privacyTitle: 'Chính sách quyền riêng tư',
         privacyContent: 'Ứng dụng này lưu trữ tất cả dữ liệu cục bộ trên thiết bị của bạn. Không có dữ liệu nào được gửi đến máy chủ bên ngoài.',
+
+        // RoundInputScreen
+        roundInput: 'Nhập Ván',
+        noMatch: 'Không có trận đấu nào',
+        selectPenaltyType: 'Chọn Loại Phạt',
+        chatHeoOption: 'Chặt Heo',
+        chongOption: 'Chồng/Thúi',
+        threeTepOption: '3 Tép',
+        selectHeoType: 'Loại heo:',
+        blackHeo: 'Đen',
+        redHeo: 'Đỏ',
+        heoCount: 'Số con:',
+        selectTarget: 'Người bị phạt:',
+        selectChongType: 'Loại chồng:',
+        victimPlayer: 'Người bị giết:',
+        additionalPenalties: 'Phạt thêm (nếu có):',
+        rankAlreadySelected: 'Hạng đã được chọn',
+        onlyRank1CanToiTrang: 'Chỉ người về nhất mới có thể Tới Trắng',
+        selectVictim: 'Vui lòng chọn người bị phạt',
+        selectChongAndTarget: 'Vui lòng chọn loại chồng và người bị phạt',
+        selectKillVictim: 'Vui lòng chọn người bị giết',
+        addedPenalty: 'Đã thêm phạt',
+        success: 'Thành công',
+        error: 'Lỗi',
+        warning: 'Cảnh báo',
+        selectRankForAll: 'Vui lòng chọn hạng cho tất cả người chơi',
+        toiTrangMustBeRank1: 'Người Tới Trắng phải về nhất',
+        scoreSumNotZero: 'Tổng điểm không bằng 0',
+        stillWantToSave: 'Vẫn muốn lưu?',
+        roundSaved: 'Đã lưu ván',
+        tapToViewDetails: 'Nhấn để xem chi tiết',
     },
     en: {
+        // Common
+        type: 'Type',
+        calculateAndSave: 'Calculate and Save',
         // Navigation
         players: 'Players',
         matches: 'Matches',
@@ -170,7 +209,8 @@ const translations = {
         toiTrang: 'Instant Win',
         killed: 'Killed',
         killedBy: 'Killed by',
-        penalties: 'Penalties',
+        kill: 'Kill',
+        penalty: 'Penalty someone',
         heoDen: 'Black Pig',
         heoDo: 'Red Pig',
         baTep: 'Three of Clubs',
@@ -179,6 +219,7 @@ const translations = {
         // Snake case versions (matching PenaltyType)
         heo_den: 'Black Pig',
         heo_do: 'Red Pig',
+        heo: 'Pig',
         ba_tep: 'Three of Clubs',
         ba_doi_thong: 'Three of Pair',
         tu_quy: 'Four of a Kind',
@@ -261,13 +302,44 @@ const translations = {
 
         // About
         appName: 'Tiến Lên Score',
-        appDescription: 'Score tracking app for Tiến Lên card game',
+        appDescription: 'Score tracking app design by AnhKhangSayHi',
         version: 'Version',
         developer: 'Developed by',
 
         // Privacy
         privacyTitle: 'Privacy Policy',
         privacyContent: 'This app stores all data locally on your device. No data is sent to external servers.',
+
+        // RoundInputScreen
+        roundInput: 'Round Input',
+        noMatch: 'No active match',
+        selectPenaltyType: 'Select Penalty Type',
+        chatHeoOption: 'Kill Pig',
+        chongOption: 'Stack/Penalty',
+        threeTepOption: 'Three Clubs',
+        selectHeoType: 'Pig type:',
+        blackHeo: 'Black',
+        redHeo: 'Red',
+        heoCount: 'Count:',
+        selectTarget: 'Target player:',
+        selectChongType: 'Stack type:',
+        victimPlayer: 'Victim:',
+        additionalPenalties: 'Additional penalties:',
+        rankAlreadySelected: 'Rank already selected',
+        onlyRank1CanToiTrang: 'Only rank 1 can Instant Win',
+        selectVictim: 'Please select target player',
+        selectChongAndTarget: 'Please select stack type and target',
+        selectKillVictim: 'Please select victim',
+        addedPenalty: 'Penalty added',
+        success: 'Success',
+        error: 'Error',
+        warning: 'Warning',
+        selectRankForAll: 'Please select rank for all players',
+        toiTrangMustBeRank1: 'Instant Win player must be rank 1',
+        scoreSumNotZero: 'Score sum is not zero',
+        stillWantToSave: 'Still want to save?',
+        roundSaved: 'Round saved',
+        tapToViewDetails: 'Tap to view details',
     }
 };
 
@@ -275,5 +347,19 @@ const i18n = new I18n(translations);
 i18n.defaultLocale = 'vi';
 i18n.locale = 'vi';
 i18n.enableFallback = true;
+
+// Language switching functions
+export const setLocale = (locale: 'vi' | 'en') => {
+    i18n.locale = locale;
+};
+
+export const getLocale = (): string => {
+    return i18n.locale;
+};
+
+export const toggleLocale = () => {
+    i18n.locale = i18n.locale === 'vi' ? 'en' : 'vi';
+    return i18n.locale;
+};
 
 export default i18n;

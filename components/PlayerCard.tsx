@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Player } from '../types/models';
@@ -38,9 +38,16 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
     >
       <View style={styles.content}>
         <View style={[styles.avatar, { backgroundColor: playerColor }]}>
-          <Text style={styles.avatarText}>
-            {player.name.charAt(0).toUpperCase()}
-          </Text>
+          {player.avatar ? (
+            <Image 
+              source={{ uri: player.avatar }} 
+              style={styles.avatarImage}
+            />
+          ) : (
+            <Text style={styles.avatarText}>
+              {player.name.charAt(0).toUpperCase()}
+            </Text>
+          )}
         </View>
 
         <View style={styles.info}>
@@ -97,6 +104,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   avatarText: {
     color: '#FFF',
@@ -122,3 +135,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+

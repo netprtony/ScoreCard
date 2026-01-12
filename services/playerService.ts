@@ -10,6 +10,7 @@ export const getAllPlayers = (): Player[] => {
         id: row.id,
         name: row.name,
         color: row.color,
+        avatar: row.avatar,
         createdAt: row.created_at
     }));
 };
@@ -27,30 +28,32 @@ export const getPlayerById = (id: string): Player | null => {
         id: row.id,
         name: row.name,
         color: row.color,
+        avatar: row.avatar,
         createdAt: row.created_at
     };
 };
 
-export const createPlayer = (name: string, color?: string): Player => {
+export const createPlayer = (name: string, color?: string, avatar?: string): Player => {
     const player: Player = {
         id: `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name,
         color,
+        avatar,
         createdAt: Date.now()
     };
 
     executeUpdate(
-        'INSERT INTO players (id, name, color, created_at) VALUES (?, ?, ?, ?)',
-        [player.id, player.name, player.color || null, player.createdAt]
+        'INSERT INTO players (id, name, color, avatar, created_at) VALUES (?, ?, ?, ?, ?)',
+        [player.id, player.name, player.color || null, player.avatar || null, player.createdAt]
     );
 
     return player;
 };
 
-export const updatePlayer = (id: string, name: string, color?: string): void => {
+export const updatePlayer = (id: string, name: string, color?: string, avatar?: string): void => {
     executeUpdate(
-        'UPDATE players SET name = ?, color = ? WHERE id = ?',
-        [name, color || null, id]
+        'UPDATE players SET name = ?, color = ?, avatar = ? WHERE id = ?',
+        [name, color || null, avatar || null, id]
     );
 };
 
@@ -64,3 +67,4 @@ export const getPlayerCount = (): number => {
     );
     return rows[0]?.count || 0;
 };
+

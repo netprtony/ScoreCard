@@ -141,6 +141,77 @@ export const completeMatch = (matchId: string): void => {
     );
 };
 
+// Pause a match (set to 'paused')
+export const pauseMatch = (matchId: string): void => {
+    executeUpdate(
+        'UPDATE matches SET status = ? WHERE id = ?',
+        ['paused', matchId]
+    );
+};
+
+// Resume a match (set to 'active', pause any other active match)
+export const resumeMatch = (matchId: string): void => {
+    // First, pause any currently active match
+    executeUpdate(
+        'UPDATE matches SET status = ? WHERE status = ?',
+        ['paused', 'active']
+    );
+
+    // Then set the target match to active
+    executeUpdate(
+        'UPDATE matches SET status = ? WHERE id = ?',
+        ['active', matchId]
+    );
+};
+
+// Get all ongoing matches (active + paused)
+export const getOngoingMatches = (): Match[] => {
+    const rows = executeQuery<any>(
+        'SELECT * FROM matches WHERE status IN (?, ?) ORDER BY created_at DESC',
+        ['active', 'paused']
+    );
+
+    return rows.map(row => {
+        const rounds = getRoundsByMatchId(row.id);
+        return {
+            id: row.id,
+            gameType: row.game_type,
+            playerIds: JSON.parse(row.player_ids),
+            playerNames: JSON.parse(row.player_names),
+            configSnapshot: JSON.parse(row.config_snapshot),
+            rounds,
+            totalScores: JSON.parse(row.total_scores),
+            status: row.status,
+            createdAt: row.created_at,
+            completedAt: row.completed_at || undefined
+        };
+    });
+};
+
+// Get only completed matches (for history)
+export const getCompletedMatches = (): Match[] => {
+    const rows = executeQuery<any>(
+        'SELECT * FROM matches WHERE status = ? ORDER BY completed_at DESC',
+        ['completed']
+    );
+
+    return rows.map(row => {
+        const rounds = getRoundsByMatchId(row.id);
+        return {
+            id: row.id,
+            gameType: row.game_type,
+            playerIds: JSON.parse(row.player_ids),
+            playerNames: JSON.parse(row.player_names),
+            configSnapshot: JSON.parse(row.config_snapshot),
+            rounds,
+            totalScores: JSON.parse(row.total_scores),
+            status: row.status,
+            createdAt: row.created_at,
+            completedAt: row.completed_at || undefined
+        };
+    });
+};
+
 // Delete a match and all its rounds
 export const deleteMatch = (id: string): void => {
     deleteRoundsByMatchId(id);

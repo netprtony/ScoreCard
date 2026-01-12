@@ -1,14 +1,25 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { Match, Round, ScoringConfig } from '../types/models';
-import { getActiveMatch, updateMatchConfig, updateMatchTotalScores, completeMatch } from '../services/matchService';
+import { 
+    getActiveMatch, 
+    updateMatchConfig, 
+    updateMatchTotalScores, 
+    completeMatch,
+    pauseMatch as pauseMatchService,
+    resumeMatch as resumeMatchService,
+    getOngoingMatches
+} from '../services/matchService';
 import { createRound } from '../services/roundService';
 
 interface MatchContextType {
     activeMatch: Match | null;
+    ongoingMatches: Match[];
     refreshMatch: () => void;
     addRound: (round: Omit<Round, 'id' | 'createdAt' | 'matchId'>) => void;
     updateConfig: (config: ScoringConfig) => void;
     updateTotalScores: (scores: { [playerId: string]: number }) => void;
+    pauseMatch: () => void;
+    resumeMatch: (matchId: string) => void;
     endMatch: () => void;
 }
 
@@ -16,11 +27,14 @@ const MatchContext = createContext<MatchContextType | undefined>(undefined);
 
 export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [activeMatch, setActiveMatch] = useState<Match | null>(null);
+    const [ongoingMatches, setOngoingMatches] = useState<Match[]>([]);
 
     const refreshMatch = useCallback(() => {
         try {
             const match = getActiveMatch();
             setActiveMatch(match);
+            const ongoing = getOngoingMatches();
+            setOngoingMatches(ongoing);
         } catch (error) {
             console.error('Error refreshing match:', error);
         }
@@ -77,25 +91,49 @@ export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     }, [activeMatch, refreshMatch]);
 
+    const pauseMatch = useCallback(() => {
+        if (!activeMatch) return;
+
+        try {
+            pauseMatchService(activeMatch.id);
+            refreshMatch();
+        } catch (error) {
+            console.error('Error pausing match:', error);
+        }
+    }, [activeMatch, refreshMatch]);
+
+    const resumeMatch = useCallback((matchId: string) => {
+        try {
+            resumeMatchService(matchId);
+            refreshMatch();
+        } catch (error) {
+            console.error('Error resuming match:', error);
+        }
+    }, [refreshMatch]);
+
     const endMatch = useCallback(() => {
         if (!activeMatch) return;
 
         try {
             completeMatch(activeMatch.id);
             setActiveMatch(null);
+            refreshMatch();
         } catch (error) {
             console.error('Error ending match:', error);
         }
-    }, [activeMatch]);
+    }, [activeMatch, refreshMatch]);
 
     return (
         <MatchContext.Provider
             value={{
                 activeMatch,
+                ongoingMatches,
                 refreshMatch,
                 addRound,
                 updateConfig,
                 updateTotalScores,
+                pauseMatch,
+                resumeMatch,
                 endMatch
             }}
         >

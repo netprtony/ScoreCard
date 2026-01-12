@@ -23,10 +23,11 @@ import { showSuccess, showWarning } from '../utils/toast';
 export const ActiveMatchScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
-  const { activeMatch, endMatch, refreshMatch, updateConfig } = useMatch();
+  const { activeMatch, ongoingMatches, endMatch, refreshMatch, updateConfig, pauseMatch, resumeMatch } = useMatch();
   
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editedConfig, setEditedConfig] = useState<ScoringConfig | null>(null);
+  const [showOngoingModal, setShowOngoingModal] = useState(false);
 
   const handleAddRound = () => {
     navigation.navigate('RoundInput' as never);
@@ -121,6 +122,33 @@ export const ActiveMatchScreen: React.FC = () => {
     );
   };
 
+  const handlePauseMatch = () => {
+    Alert.alert(
+      'Tạm hoãn trận đấu',
+      'Trận đấu sẽ được lưu và bạn có thể tiếp tục bất cứ lúc nào.',
+      [
+        { text: i18n.t('cancel'), style: 'cancel' },
+        {
+          text: 'Tạm hoãn',
+          onPress: () => {
+            pauseMatch();
+            showSuccess('Đã tạm hoãn trận đấu');
+            navigation.navigate('Matches' as never);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleResumeMatch = (matchId: string) => {
+    resumeMatch(matchId);
+    setShowOngoingModal(false);
+    showSuccess('Đã tiếp tục trận đấu');
+  };
+
+  // Get paused matches (excluding current active)
+  const pausedMatches = ongoingMatches.filter(m => m.status === 'paused');
+
   if (!activeMatch) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -135,6 +163,32 @@ export const ActiveMatchScreen: React.FC = () => {
           >
             <Text style={styles.startButtonText}>Bắt Đầu Trận Mới</Text>
           </TouchableOpacity>
+          
+          {/* Show paused matches */}
+          {pausedMatches.length > 0 && (
+            <View style={styles.pausedSection}>
+              <Text style={[styles.pausedTitle, { color: theme.text }]}>
+                Trận đang tạm hoãn ({pausedMatches.length})
+              </Text>
+              {pausedMatches.map(match => (
+                <TouchableOpacity
+                  key={match.id}
+                  style={[styles.pausedMatchCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+                  onPress={() => handleResumeMatch(match.id)}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.pausedMatchPlayers, { color: theme.text }]}>
+                      {match.playerNames.join(' • ')}
+                    </Text>
+                    <Text style={[styles.pausedMatchInfo, { color: theme.textSecondary }]}>
+                      {match.rounds.length} ván đã chơi
+                    </Text>
+                  </View>
+                  <Ionicons name="play-circle" size={32} color={theme.primary} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -150,8 +204,15 @@ export const ActiveMatchScreen: React.FC = () => {
           </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             Ván {activeMatch.rounds.length + 1}
+            {pausedMatches.length > 0 && ` • ${pausedMatches.length} trận tạm hoãn`}
           </Text>
         </View>
+        <TouchableOpacity
+          style={[styles.iconButton, { backgroundColor: theme.warning, marginRight: 8 }]}
+          onPress={handlePauseMatch}
+        >
+          <Ionicons name="pause" size={24} color="#FFF" />
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.iconButton, { backgroundColor: theme.surface }]}
           onPress={handleEditConfig}
@@ -653,5 +714,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  pausedSection: {
+    width: '100%',
+    marginTop: 32,
+    paddingHorizontal: 20,
+  },
+  pausedTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  pausedMatchCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  pausedMatchPlayers: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  pausedMatchInfo: {
+    fontSize: 13,
   },
 });

@@ -78,7 +78,7 @@ export const RoundInputScreen: React.FC = () => {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: theme.text }]}>Không có trận đấu nào</Text>
+          <Text style={[styles.emptyText, { color: theme.text }]}>{i18n.t('noMatch')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -431,7 +431,7 @@ export const RoundInputScreen: React.FC = () => {
                       onPress={() => toggleToiTrang(playerId)}
                     >
                       <Ionicons name="star-outline" size={20} color="#FFF" />
-                      <Text style={styles.twoColumnButtonText}>Tới Trắng</Text>
+                      <Text style={styles.twoColumnButtonText}>{i18n.t('toiTrang')}</Text>
                     </TouchableOpacity>
                   )}
                   {config.enableKill && (
@@ -440,7 +440,7 @@ export const RoundInputScreen: React.FC = () => {
                       onPress={() => openGietModal(playerId)}
                     >
                       <Ionicons name="skull" size={20} color="#FFF" />
-                      <Text style={styles.twoColumnButtonText}>Giết</Text>
+                      <Text style={styles.twoColumnButtonText}>{i18n.t('kill')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -453,18 +453,18 @@ export const RoundInputScreen: React.FC = () => {
                   onPress={() => toggleToiTrang(playerId)}
                 >
                   <Ionicons name="star" size={20} color="#FFF" />
-                  <Text style={styles.toiTrangText}>Tới Trắng</Text>
+                  <Text style={styles.toiTrangText}>{i18n.t('toiTrang')}</Text>
                 </TouchableOpacity>
               )}
 
               {/* Penalty Button - Only if not Tới Trắng and has rank */}
               {!toiTrangWinner && rank && (
                 <TouchableOpacity
-                  style={[styles.penaltyButton, { backgroundColor: theme.primary }]}
+                  style={[styles.penaltyButton, { backgroundColor: theme.success }]}
                   onPress={() => openPenaltyModal(playerId)}
                 >
                   <Ionicons name="warning" size={20} color="#FFF" />
-                  <Text style={styles.penaltyButtonText}>Phạt ai đó</Text>
+                  <Text style={styles.penaltyButtonText}>{i18n.t('penalty')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -476,7 +476,7 @@ export const RoundInputScreen: React.FC = () => {
         style={[styles.saveButton, { backgroundColor: theme.primary }]}
         onPress={calculateAndSave}
       >
-        <Text style={styles.saveButtonText}>Tính Điểm và Lưu</Text>
+        <Text style={styles.saveButtonText}>{i18n.t('calculateAndSave')}</Text>
       </TouchableOpacity>
 
       {/* Penalty Modal */}
@@ -492,13 +492,13 @@ export const RoundInputScreen: React.FC = () => {
               <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
             {modalStep === 'select_type' && (
               <>
-                <Text style={[styles.modalTitle, { color: theme.text }]}>Chọn Loại Phạt</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>{i18n.t('selectPenaltyType')}</Text>
                 {config.enableChatHeo && (
                   <TouchableOpacity
                     style={[styles.modalOption, { backgroundColor: theme.surface }]}
                     onPress={() => selectPenaltyType('heo')}
                   >
-                    <Text style={[styles.modalOptionText, { color: theme.text }]}>Chặt Heo</Text>
+                    <Text style={[styles.modalOptionText, { color: theme.text }]}>{i18n.t('chatHeoOption')}</Text>
                   </TouchableOpacity>
                 )}
                 {config.enablePenalties && (
@@ -506,7 +506,7 @@ export const RoundInputScreen: React.FC = () => {
                     style={[styles.modalOption, { backgroundColor: theme.surface }]}
                     onPress={() => selectPenaltyType('chong')}
                   >
-                    <Text style={[styles.modalOptionText, { color: theme.text }]}>Chồng/Thúi</Text>
+                    <Text style={[styles.modalOptionText, { color: theme.text }]}>{i18n.t('chongOption')}</Text>
                   </TouchableOpacity>
                 )}
                 {/* {config.enableDutBaTep && (
@@ -521,16 +521,16 @@ export const RoundInputScreen: React.FC = () => {
                   style={[styles.modalButton, { backgroundColor: theme.border }]}
                   onPress={closePenaltyModal}
                 >
-                  <Text style={styles.modalButtonText}>Hủy</Text>
+                  <Text style={styles.modalButtonText}>{i18n.t('cancel')}</Text>
                 </TouchableOpacity>
               </>
             )}
 
             {modalStep === 'heo' && (
               <ScrollView>
-                <Text style={[styles.modalTitle, { color: theme.text }]}>Heo</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>{i18n.t('heo')}</Text>
                 
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Loại:</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('type')}</Text>
                 <View style={styles.heoTypeRow}>
                   <TouchableOpacity
                     style={[
@@ -703,13 +703,13 @@ export const RoundInputScreen: React.FC = () => {
                     style={[styles.modalButton, { backgroundColor: theme.border, flex: 1, marginRight: 8 }]}
                     onPress={() => setModalStep('select_type')}
                   >
-                    <Text style={styles.modalButtonText}>Quay lại</Text>
+                    <Text style={styles.modalButtonText}>{i18n.t('back')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.modalButton, { backgroundColor: theme.primary, flex: 1 }]}
                     onPress={saveAction}
                   >
-                    <Text style={styles.modalButtonText}>Lưu</Text>
+                    <Text style={styles.modalButtonText}>{i18n.t('save')}</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -717,9 +717,9 @@ export const RoundInputScreen: React.FC = () => {
 
             {modalStep === 'giet' && (
               <ScrollView>
-                <Text style={[styles.modalTitle, { color: theme.text }]}>Giết</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>{i18n.t('kill')}</Text>
                 
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Người bị giết:</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('killed')}</Text>
                 {getAvailableTargets().map(targetId => {
                   const targetIndex = activeMatch.playerIds.indexOf(targetId);
                   const targetName = activeMatch.playerNames[targetIndex];

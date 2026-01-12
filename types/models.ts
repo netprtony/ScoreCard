@@ -3,6 +3,7 @@ export interface Player {
     id: string;
     name: string;
     color?: string; // Custom color for avatar and name (hex format)
+    avatar?: string; // Local file path to avatar image
     createdAt: number;
 }
 
@@ -148,7 +149,7 @@ export interface Match {
     configSnapshot: ScoringConfig; // Can be edited during match
     rounds: Round[]; // Multiple rounds
     totalScores: { [playerId: string]: number }; // Cumulative
-    status: 'active' | 'completed';
+    status: 'active' | 'paused' | 'completed';
     createdAt: number;
     completedAt?: number;
 }

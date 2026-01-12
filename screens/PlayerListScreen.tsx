@@ -9,9 +9,12 @@ import {
   Modal,
   Alert,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme } from '../contexts/ThemeContext';
 import { PlayerCard } from '../components/PlayerCard';
 import { Player } from '../types/models';
@@ -24,6 +27,7 @@ import {
 } from '../services/playerService';
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
+
 // Predefined color palette
 const PLAYER_COLORS = [
   '#FF6B6B', // Red
@@ -40,6 +44,9 @@ const PLAYER_COLORS = [
   '#2A9D8F', // Dark Teal
 ];
 
+// Avatar directory
+const AVATAR_DIR = FileSystem.documentDirectory + 'avatars/';
+
 export const PlayerListScreen: React.FC = () => {
   const { theme } = useTheme();
   const [players, setPlayers] = useState<Player[]>([]);
@@ -47,14 +54,23 @@ export const PlayerListScreen: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [playerName, setPlayerName] = useState('');
   const [selectedColor, setSelectedColor] = useState<string>(PLAYER_COLORS[0]);
+  const [selectedAvatar, setSelectedAvatar] = useState<string | undefined>(undefined);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       loadPlayers();
+      ensureAvatarDirectory();
     }, [])
   );
+
+  const ensureAvatarDirectory = async () => {
+    const dirInfo = await FileSystem.getInfoAsync(AVATAR_DIR);
+    if (!dirInfo.exists) {
+      await FileSystem.makeDirectoryAsync(AVATAR_DIR, { intermediates: true });
+    }
+  };
 
   const loadPlayers = async () => {
     try {
@@ -63,6 +79,56 @@ export const PlayerListScreen: React.FC = () => {
     } catch (error) {
       console.error('Error loading players:', error);
     }
+  };
+
+  const saveAvatarToLocal = async (uri: string): Promise<string> => {
+    const filename = `avatar_${Date.now()}.jpg`;
+    const destPath = AVATAR_DIR + filename;
+    await FileSystem.copyAsync({ from: uri, to: destPath });
+    return destPath;
+  };
+
+  const pickImageFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showWarning('Lỗi', 'Cần cấp quyền truy cập thư viện ảnh');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const localUri = await saveAvatarToLocal(result.assets[0].uri);
+      setSelectedAvatar(localUri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      showWarning('Lỗi', 'Cần cấp quyền truy cập camera');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const localUri = await saveAvatarToLocal(result.assets[0].uri);
+      setSelectedAvatar(localUri);
+    }
+  };
+
+  const removeAvatar = () => {
+    setSelectedAvatar(undefined);
   };
 
   const handleAddPlayer = async () => {
@@ -79,9 +145,10 @@ export const PlayerListScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await createPlayer(playerName.trim(), selectedColor);
+      await createPlayer(playerName.trim(), selectedColor, selectedAvatar);
       setPlayerName('');
       setSelectedColor(PLAYER_COLORS[0]);
+      setSelectedAvatar(undefined);
       setShowAddModal(false);
       await loadPlayers();
     } catch (error) {
@@ -100,9 +167,10 @@ export const PlayerListScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await updatePlayer(editingPlayer.id, playerName.trim(), selectedColor);
+      await updatePlayer(editingPlayer.id, playerName.trim(), selectedColor, selectedAvatar);
       setPlayerName('');
       setSelectedColor(PLAYER_COLORS[0]);
+      setSelectedAvatar(undefined);
       setEditingPlayer(null);
       setShowEditModal(false);
       await loadPlayers();
@@ -141,8 +209,58 @@ export const PlayerListScreen: React.FC = () => {
     setEditingPlayer(player);
     setPlayerName(player.name);
     setSelectedColor(player.color || PLAYER_COLORS[0]);
+    setSelectedAvatar(player.avatar);
     setShowEditModal(true);
   };
+
+  const renderAvatarPicker = () => (
+    <View style={styles.avatarPickerContainer}>
+      <Text style={[styles.colorPickerLabel, { color: theme.textSecondary }]}>
+        Ảnh đại diện:
+      </Text>
+      <View style={styles.avatarPickerRow}>
+        {/* Avatar Preview */}
+        <View style={[styles.avatarPreview, { backgroundColor: selectedColor }]}>
+          {selectedAvatar ? (
+            <Image source={{ uri: selectedAvatar }} style={styles.avatarPreviewImage} />
+          ) : (
+            <Text style={styles.avatarPreviewText}>
+              {playerName ? playerName.charAt(0).toUpperCase() : '?'}
+            </Text>
+          )}
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.avatarActions}>
+          <TouchableOpacity
+            style={[styles.avatarButton, { backgroundColor: theme.primary }]}
+            onPress={pickImageFromGallery}
+          >
+            <Ionicons name="images" size={20} color="#FFF" />
+            <Text style={styles.avatarButtonText}>Thư viện</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.avatarButton, { backgroundColor: theme.success || '#52B788' }]}
+            onPress={takePhoto}
+          >
+            <Ionicons name="camera" size={20} color="#FFF" />
+            <Text style={styles.avatarButtonText}>Chụp ảnh</Text>
+          </TouchableOpacity>
+
+          {selectedAvatar && (
+            <TouchableOpacity
+              style={[styles.avatarButton, { backgroundColor: theme.error }]}
+              onPress={removeAvatar}
+            >
+              <Ionicons name="trash" size={20} color="#FFF" />
+              <Text style={styles.avatarButtonText}>Xóa</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -216,6 +334,9 @@ export const PlayerListScreen: React.FC = () => {
               autoFocus
             />
 
+            {/* Avatar Picker */}
+            {renderAvatarPicker()}
+
             {/* Color Picker */}
             <View style={styles.colorPickerContainer}>
               <Text style={[styles.colorPickerLabel, { color: theme.textSecondary }]}>
@@ -245,6 +366,7 @@ export const PlayerListScreen: React.FC = () => {
                 style={[styles.button, { backgroundColor: theme.surface }]}
                 onPress={() => {
                   setPlayerName('');
+                  setSelectedAvatar(undefined);
                   setShowAddModal(false);
                 }}
               >
@@ -296,6 +418,9 @@ export const PlayerListScreen: React.FC = () => {
               autoFocus
             />
 
+            {/* Avatar Picker */}
+            {renderAvatarPicker()}
+
             {/* Color Picker */}
             <View style={styles.colorPickerContainer}>
               <Text style={[styles.colorPickerLabel, { color: theme.textSecondary }]}>
@@ -325,6 +450,7 @@ export const PlayerListScreen: React.FC = () => {
                 style={[styles.button, { backgroundColor: theme.surface }]}
                 onPress={() => {
                   setPlayerName('');
+                  setSelectedAvatar(undefined);
                   setEditingPlayer(null);
                   setShowEditModal(false);
                 }}
@@ -410,6 +536,7 @@ const styles = StyleSheet.create({
     width: '85%',
     borderRadius: 16,
     padding: 20,
+    maxHeight: '80%',
   },
   modalTitle: {
     fontSize: 20,
@@ -466,5 +593,50 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
+  },
+  avatarPickerContainer: {
+    marginBottom: 16,
+  },
+  avatarPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  avatarPreview: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarPreviewImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  avatarPreviewText: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  avatarActions: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  avatarButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  avatarButtonText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

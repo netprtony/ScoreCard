@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import {
   View,
   Text,
@@ -15,6 +16,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getSettings, updateSettings } from '../services/settingsService';
 import { AppSettings } from '../types/models';
 import i18n from '../utils/i18n';
+import appJson from '../app.json';
 
 export const SettingsScreen: React.FC = () => {
   const { theme, themeMode, setThemeMode } = useTheme();
@@ -199,7 +201,7 @@ export const SettingsScreen: React.FC = () => {
                 <Ionicons name="information-circle" size={24} color={theme.text} />
                 <View>
                   <Text style={[styles.optionText, { color: theme.text }]}>
-                    {i18n.t('appName')}
+                    {appJson.expo.name}
                   </Text>
                   <Text style={[styles.optionSubtext, { color: theme.textSecondary }]}>
                     {i18n.t('appDescription')}
@@ -218,7 +220,7 @@ export const SettingsScreen: React.FC = () => {
                     {i18n.t('version')}
                   </Text>
                   <Text style={[styles.optionSubtext, { color: theme.textSecondary }]}>
-                    1.0.2
+                    {appJson.expo.version}
                   </Text>
                 </View>
               </View>

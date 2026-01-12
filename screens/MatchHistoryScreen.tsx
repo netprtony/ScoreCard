@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
 import { Match } from '../types/models';
-import { getAllMatches, deleteMatch } from '../services/matchService';
+import { getCompletedMatches, deleteMatch } from '../services/matchService';
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
 export const MatchHistoryScreen: React.FC = () => {
@@ -31,7 +31,8 @@ export const MatchHistoryScreen: React.FC = () => {
 
   const loadMatches = () => {
     try {
-      const data = getAllMatches();
+      // Only load completed matches for history
+      const data = getCompletedMatches();
       setMatches(data);
     } catch (error) {
       console.error('Error loading matches:', error);
