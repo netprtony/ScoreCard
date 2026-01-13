@@ -17,16 +17,16 @@ export const SplashScreen: React.FC = () => {
   }, [navigation]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.primary }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.content}>
         {/* Logo placeholder - replace with actual logo if available */}
         <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>🎴</Text>
+          <Image source={require('../assets/logoSplashScreen.png')} style={styles.logo} />
         </View>
         
-        <Text style={styles.appName}>Koya Score</Text>
+        <Text style={[styles.appName, {color: theme.text}]} >Koya Score</Text>
         
-        <Text style={styles.tagline}>
+        <Text style={[styles.tagline, {color: theme.textSecondary}]}>
           Tính điểm nhanh – Công bằng – Offline
         </Text>
       </View>
@@ -35,6 +35,10 @@ export const SplashScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  logo: {
+    width: 120,
+    height: 120,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
