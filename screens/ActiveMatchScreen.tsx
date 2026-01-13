@@ -558,6 +558,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   tableContainer: {
+    flex: 1,
     marginHorizontal: 8,
     marginBottom: 100,
     borderRadius: 12,

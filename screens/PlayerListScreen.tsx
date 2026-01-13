@@ -10,7 +10,9 @@ import {
   Alert,
   SafeAreaView,
   Image,
+  ScrollView,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -28,21 +30,17 @@ import {
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
 
-// Predefined color palette
-const PLAYER_COLORS = [
-  '#FF6B6B', // Red
-  '#4ECDC4', // Teal
-  '#45B7D1', // Blue
-  '#FFA07A', // Light Salmon
-  '#98D8C8', // Mint
-  '#F7DC6F', // Yellow
-  '#BB8FCE', // Purple
-  '#85C1E2', // Sky Blue
-  '#F8B739', // Orange
-  '#52B788', // Green
-  '#E76F51', // Coral
-  '#2A9D8F', // Dark Teal
-];
+// Helper function to convert HSL to Hex
+const hslToHex = (h: number, s: number, l: number): string => {
+  l /= 100;
+  const a = s * Math.min(l, 1 - l) / 100;
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+};
 
 // Avatar directory
 const AVATAR_DIR = FileSystem.documentDirectory + 'avatars/';
@@ -53,10 +51,18 @@ export const PlayerListScreen: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [playerName, setPlayerName] = useState('');
-  const [selectedColor, setSelectedColor] = useState<string>(PLAYER_COLORS[0]);
+  const [hue, setHue] = useState(0);
+  const [saturation, setSaturation] = useState(70);
+  const [lightness, setLightness] = useState(60);
+  const [selectedColor, setSelectedColor] = useState<string>(hslToHex(0, 70, 60));
   const [selectedAvatar, setSelectedAvatar] = useState<string | undefined>(undefined);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Update selectedColor when HSL values change
+  useEffect(() => {
+    setSelectedColor(hslToHex(hue, saturation, lightness));
+  }, [hue, saturation, lightness]);
 
   useFocusEffect(
     useCallback(() => {
@@ -147,7 +153,9 @@ export const PlayerListScreen: React.FC = () => {
     try {
       await createPlayer(playerName.trim(), selectedColor, selectedAvatar);
       setPlayerName('');
-      setSelectedColor(PLAYER_COLORS[0]);
+      setHue(0);
+      setSaturation(70);
+      setLightness(60);
       setSelectedAvatar(undefined);
       setShowAddModal(false);
       await loadPlayers();
@@ -169,7 +177,9 @@ export const PlayerListScreen: React.FC = () => {
     try {
       await updatePlayer(editingPlayer.id, playerName.trim(), selectedColor, selectedAvatar);
       setPlayerName('');
-      setSelectedColor(PLAYER_COLORS[0]);
+      setHue(0);
+      setSaturation(70);
+      setLightness(60);
       setSelectedAvatar(undefined);
       setEditingPlayer(null);
       setShowEditModal(false);
@@ -208,7 +218,14 @@ export const PlayerListScreen: React.FC = () => {
   const openEditModal = (player: Player) => {
     setEditingPlayer(player);
     setPlayerName(player.name);
-    setSelectedColor(player.color || PLAYER_COLORS[0]);
+    // Try to keep the existing color or use default
+    if (player.color) {
+      setSelectedColor(player.color);
+      // Set HSL to default values when editing (user can adjust)
+      setHue(0);
+      setSaturation(70);
+      setLightness(60);
+    }
     setSelectedAvatar(player.avatar);
     setShowEditModal(true);
   };
@@ -258,6 +275,71 @@ export const PlayerListScreen: React.FC = () => {
             </TouchableOpacity>
           )}
         </View>
+      </View>
+    </View>
+  );
+
+  const renderColorPicker = () => (
+    <View style={styles.colorPickerContainer}>
+      <Text style={[styles.colorPickerLabel, { color: theme.textSecondary }]}>
+        Chọn màu:
+      </Text>
+      
+      {/* Color Preview */}
+      <View style={styles.colorPreviewContainer}>
+        <View style={[styles.colorPreview, { backgroundColor: selectedColor }]} />
+        <Text style={[styles.colorHexText, { color: theme.text }]}>{selectedColor}</Text>
+      </View>
+
+      {/* Hue Slider */}
+      <View style={styles.sliderContainer}>
+        <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
+          Màu sắc (Hue: {Math.round(hue)}°)
+        </Text>
+        <Slider
+          style={styles.slider}
+          minimumValue={0}
+          maximumValue={360}
+          value={hue}
+          onValueChange={setHue}
+          minimumTrackTintColor={hslToHex(hue, 100, 50)}
+          maximumTrackTintColor={theme.border}
+          thumbTintColor={hslToHex(hue, 100, 50)}
+        />
+      </View>
+
+      {/* Saturation Slider */}
+      <View style={styles.sliderContainer}>
+        <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
+          Độ bão hòa: {Math.round(saturation)}%
+        </Text>
+        <Slider
+          style={styles.slider}
+          minimumValue={0}
+          maximumValue={100}
+          value={saturation}
+          onValueChange={setSaturation}
+          minimumTrackTintColor={selectedColor}
+          maximumTrackTintColor={theme.border}
+          thumbTintColor={selectedColor}
+        />
+      </View>
+
+      {/* Lightness Slider */}
+      <View style={styles.sliderContainer}>
+        <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
+          Độ sáng: {Math.round(lightness)}%
+        </Text>
+        <Slider
+          style={styles.slider}
+          minimumValue={0}
+          maximumValue={100}
+          value={lightness}
+          onValueChange={setLightness}
+          minimumTrackTintColor={selectedColor}
+          maximumTrackTintColor={theme.border}
+          thumbTintColor={selectedColor}
+        />
       </View>
     </View>
   );
@@ -318,7 +400,11 @@ export const PlayerListScreen: React.FC = () => {
               {i18n.t('addPlayer')}
             </Text>
 
-            <TextInput
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              style={styles.modalScrollView}
+            >
+              <TextInput
               style={[
                 styles.input,
                 {
@@ -338,28 +424,8 @@ export const PlayerListScreen: React.FC = () => {
             {renderAvatarPicker()}
 
             {/* Color Picker */}
-            <View style={styles.colorPickerContainer}>
-              <Text style={[styles.colorPickerLabel, { color: theme.textSecondary }]}>
-                Chọn màu:
-              </Text>
-              <View style={styles.colorGrid}>
-                {PLAYER_COLORS.map((color) => (
-                  <TouchableOpacity
-                    key={color}
-                    style={[
-                      styles.colorOption,
-                      { backgroundColor: color },
-                      selectedColor === color && styles.colorOptionSelected,
-                    ]}
-                    onPress={() => setSelectedColor(color)}
-                  >
-                    {selectedColor === color && (
-                      <Ionicons name="checkmark" size={20} color="#FFF" />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+            {renderColorPicker()}
+            </ScrollView>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -402,7 +468,11 @@ export const PlayerListScreen: React.FC = () => {
               {i18n.t('editPlayer')}
             </Text>
 
-            <TextInput
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              style={styles.modalScrollView}
+            >
+              <TextInput
               style={[
                 styles.input,
                 {
@@ -422,28 +492,8 @@ export const PlayerListScreen: React.FC = () => {
             {renderAvatarPicker()}
 
             {/* Color Picker */}
-            <View style={styles.colorPickerContainer}>
-              <Text style={[styles.colorPickerLabel, { color: theme.textSecondary }]}>
-                Chọn màu:
-              </Text>
-              <View style={styles.colorGrid}>
-                {PLAYER_COLORS.map((color) => (
-                  <TouchableOpacity
-                    key={color}
-                    style={[
-                      styles.colorOption,
-                      { backgroundColor: color },
-                      selectedColor === color && styles.colorOptionSelected,
-                    ]}
-                    onPress={() => setSelectedColor(color)}
-                  >
-                    {selectedColor === color && (
-                      <Ionicons name="checkmark" size={20} color="#FFF" />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+            {renderColorPicker()}
+            </ScrollView>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -536,7 +586,11 @@ const styles = StyleSheet.create({
     width: '85%',
     borderRadius: 16,
     padding: 20,
-    maxHeight: '80%',
+    paddingBottom: 10,
+    maxHeight: '85%',
+  },
+  modalScrollView: {
+    maxHeight: '100%',
   },
   modalTitle: {
     fontSize: 20,
@@ -564,35 +618,86 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  colorPickerScrollView: {
+    maxHeight: 300,
+  },
   colorPickerContainer: {
     marginBottom: 16,
   },
   colorPickerLabel: {
     fontSize: 14,
-    marginBottom: 8,
+    marginBottom: 12,
     fontWeight: '500',
   },
-  colorGrid: {
+  colorPreviewContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  colorOption: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    marginBottom: 16,
+    gap: 12,
   },
-  colorOptionSelected: {
+  colorPreview: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
     borderColor: '#FFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
+  },
+  colorHexText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'monospace',
+  },
+  sliderContainer: {
+    marginBottom: 10,
+  },
+  sliderLabel: {
+    fontSize: 13,
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  sliderRow: {
+    position: 'relative',
+    height: 40,
+    justifyContent: 'center',
+  },
+  sliderTrack: {
+    height: 8,
+    borderRadius: 4,
+    width: '100%',
+  },
+  hueGradient: {
+    height: 8,
+    borderRadius: 4,
+  },
+  sliderThumb: {
+    position: 'absolute',
+    width: '100%',
+    height: 40,
+  },
+  sliderThumbInner: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFF',
+    borderWidth: 2,
+    borderColor: '#333',
+    top: 10,
+    marginLeft: -10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   avatarPickerContainer: {
     marginBottom: 16,

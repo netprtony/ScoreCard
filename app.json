@@ -4,11 +4,11 @@
     "slug": "KoyaScore",
     "version": "1.0.3",
     "orientation": "portrait",
-    "icon": "./assets/icon3.png",
+    "icon": "./assets/mainLogoApp.png",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/Splash.png",
       "resizeMode": "cover",
       "backgroundColor": "#0E0E0E"
     },
@@ -18,7 +18,7 @@
     "android": {
       "package": "com.tienlen.scorecard",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/mainLogoApp.png",
         "backgroundColor": "#0E0E0E"
       },
       "edgeToEdgeEnabled": true,

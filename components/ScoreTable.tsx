@@ -80,17 +80,22 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
 
             {/* Round Rows */}
             {match.rounds.map((round, roundIndex) => (
-              <TouchableOpacity
+              <View
                 key={round.id}
                 style={styles.row}
-                onPress={() => handleRowPress(round.id)}
-                disabled={!editable}
               >
-                <View style={[styles.cell, { backgroundColor: theme.surface }]}>
+                {/* Only the first column (Ván) is touchable */}
+                <TouchableOpacity 
+                  style={[styles.cell, { backgroundColor: theme.surface }]}
+                  onPress={() => handleRowPress(round.id)}
+                  disabled={!editable}
+                >
                   <Text style={[styles.cellText, { color: theme.text }]}>
                     Ván {round.roundNumber}
                   </Text>
-                </View>
+                </TouchableOpacity>
+                
+                {/* Sum column - not touchable */}
                 <View style={[styles.cell, { backgroundColor: theme.warning + '10' }]}>
                   <Text
                     style={[
@@ -102,6 +107,8 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
                     {getRoundSum(roundIndex)}
                   </Text>
                 </View>
+                
+                {/* Player score columns - not touchable */}
                 {match.playerIds.map((playerId, playerIndex) => {
                   const score = round.roundScores[playerId] || 0;
                   return (
@@ -119,7 +126,7 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
                     </View>
                   );
                 })}
-              </TouchableOpacity>
+              </View>
             ))}
 
             {/* Total Row */}
@@ -159,10 +166,10 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
 
 const styles = StyleSheet.create({
   tableWrapper: {
-    // Container for the table
+    flex: 1,
   },
   container: {
-    maxHeight: 400,
+    flex: 1,
   },
   contentContainer: {
     paddingHorizontal: 4,
