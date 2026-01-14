@@ -53,6 +53,24 @@ workflows:
           echo "Running TypeScript type checking..."
           npx tsc --noEmit
           
+      - name: 🔑 Verify EXPO_TOKEN
+        script: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "❌ ERROR: EXPO_TOKEN is not set!"
+            echo ""
+            echo "📋 To fix this:"
+            echo "1. Go to https://expo.dev/accounts/[your-account]/settings/access-tokens"
+            echo "2. Create a new token with 'Read and write' permissions"
+            echo "3. In Codemagic UI: Settings > Environment variables > Add variable"
+            echo "   - Name: EXPO_TOKEN"
+            echo "   - Value: [your token]"
+            echo "   - ✅ Secure: checked"
+            echo ""
+            echo "📖 See: .agent/EXPO_TOKEN_SETUP.md for detailed guide"
+            exit 1
+          fi
+          echo "✅ EXPO_TOKEN is set"
+          
       - name: 🏗️ Build Android APK/AAB
         script: |
           echo "Building Android app with Expo..."
@@ -144,6 +162,15 @@ workflows:
         script: |
           echo "Running TypeScript type checking..."
           npx tsc --noEmit
+          
+      - name: 🔑 Verify EXPO_TOKEN
+        script: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "❌ ERROR: EXPO_TOKEN is not set!"
+            echo "📖 See: .agent/EXPO_TOKEN_SETUP.md for setup guide"
+            exit 1
+          fi
+          echo "✅ EXPO_TOKEN is set"
           
       - name: 🏗️ Build iOS IPA
         script: |
