@@ -16,8 +16,8 @@ workflows:
     instance_type: mac_mini_m1
     
     environment:
-      groups:
-        # Add these environment variable groups in Codemagic UI:
+      # groups:
+        # Add these environment variable groups in Codemagic UI when needed:
         # - google_play (GCLOUD_SERVICE_ACCOUNT_CREDENTIALS)
         # - expo (EXPO_TOKEN)
       vars:
@@ -102,8 +102,8 @@ workflows:
     instance_type: mac_mini_m1
     
     environment:
-      groups:
-        # Add these environment variable groups in Codemagic UI:
+      # groups:
+        # Add these environment variable groups in Codemagic UI when needed:
         # - app_store_connect (APP_STORE_CONNECT_KEY_IDENTIFIER, etc.)
         # - expo (EXPO_TOKEN)
         # - ios_certificate (CERTIFICATE_PRIVATE_KEY, etc.)
@@ -171,7 +171,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com
+          - huynhvikhang6a13@gmail.com
         notify:
           success: true
           failure: true
@@ -229,7 +229,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - dev-team@example.com
+          - huynhvikhang6a13@gmail.com
         notify:
           success: false
           failure: true
@@ -282,7 +282,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - qa-team@example.com
+          - huynhvikhang6a13@gmail.com
         notify:
           success: false
           failure: true
