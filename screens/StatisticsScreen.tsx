@@ -11,12 +11,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { PlayerStats } from '../types/models';
 import { getAllPlayerStats } from '../services/statsService';
-import i18n from '../utils/i18n';
 
 export const StatisticsScreen: React.FC = () => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<PlayerStats[]>([]);
   const [sortBy, setSortBy] = useState<'score' | 'wins' | 'matches'>('score');
 
@@ -85,7 +86,7 @@ export const StatisticsScreen: React.FC = () => {
             {item.playerName}
           </Text>
           <Text style={[styles.winRate, { color: theme.textSecondary }]}>
-            {getWinRate(item)}% thắng
+            {getWinRate(item)}% {t('winRate')}
           </Text>
         </View>
       </View>
@@ -97,7 +98,7 @@ export const StatisticsScreen: React.FC = () => {
             {item.totalScore.toLocaleString('vi-VN')}
           </Text>
           <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-            {i18n.t('totalScore')}
+            {t('totalScore')}
           </Text>
         </View>
 
@@ -106,7 +107,7 @@ export const StatisticsScreen: React.FC = () => {
             {item.winCount}
           </Text>
           <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-            {i18n.t('winCount')}
+            {t('winCount')}
           </Text>
         </View>
 
@@ -115,7 +116,7 @@ export const StatisticsScreen: React.FC = () => {
             {item.totalMatches}
           </Text>
           <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-            {i18n.t('totalMatches')}
+            {t('totalMatches')}
           </Text>
         </View>
 
@@ -124,7 +125,7 @@ export const StatisticsScreen: React.FC = () => {
             {item.killCount}
           </Text>
           <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-            {i18n.t('killCount')}
+            {t('killCount')}
           </Text>
         </View>
       </View>
@@ -137,7 +138,7 @@ export const StatisticsScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>
-          {i18n.t('statistics')}
+          {t('statistics')}
         </Text>
       </View>
 
@@ -158,7 +159,7 @@ export const StatisticsScreen: React.FC = () => {
               { color: sortBy === 'score' ? '#FFF' : theme.text },
             ]}
           >
-            Điểm cao nhất
+            {t('sortByScore')}
           </Text>
         </TouchableOpacity>
 
@@ -178,7 +179,7 @@ export const StatisticsScreen: React.FC = () => {
               { color: sortBy === 'wins' ? '#FFF' : theme.text },
             ]}
           >
-            Nhiều thắng nhất
+            {t('sortByWins')}
           </Text>
         </TouchableOpacity>
 
@@ -198,7 +199,7 @@ export const StatisticsScreen: React.FC = () => {
               { color: sortBy === 'matches' ? '#FFF' : theme.text },
             ]}
           >
-            Nhiều trận nhất
+            {t('sortByMatches')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -212,10 +213,10 @@ export const StatisticsScreen: React.FC = () => {
           <View style={styles.emptyContainer}>
             <Ionicons name="stats-chart-outline" size={64} color={theme.textSecondary} />
             <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              Chưa có dữ liệu thống kê
+              {t('noStatsYet')}
             </Text>
             <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
-              Chơi một vài trận để xem thống kê
+              {t('playToSeeStats')}
             </Text>
           </View>
         }

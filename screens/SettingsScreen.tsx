@@ -15,13 +15,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getSettings, updateSettings } from '../services/settingsService';
 import { AppSettings } from '../types/models';
-import i18n from '../utils/i18n';
 import appJson from '../app.json';
 
 export const SettingsScreen: React.FC = () => {
   const { theme, themeMode, setThemeMode } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
   const [settings, setSettingsState] = useState<AppSettings | null>(null);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
@@ -48,8 +49,7 @@ export const SettingsScreen: React.FC = () => {
   };
 
   const handleLanguageChange = async (lang: 'vi' | 'en') => {
-    i18n.locale = lang;
-    await updateSettings({ language: lang });
+    await setLanguage(lang);
     await loadSettings();
   };
 
@@ -67,14 +67,14 @@ export const SettingsScreen: React.FC = () => {
       <ScrollView>
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.text }]}>
-            {i18n.t('settings')}
+            {t('settings')}
           </Text>
         </View>
 
         {/* Theme Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            {i18n.t('theme')}
+            {t('theme')}
           </Text>
 
           <View style={[styles.card, { backgroundColor: theme.card }]}>
@@ -85,7 +85,7 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.optionLeft}>
                 <Ionicons name="sunny" size={24} color={theme.text} />
                 <Text style={[styles.optionText, { color: theme.text }]}>
-                  {i18n.t('light')}
+                  {t('light')}
                 </Text>
               </View>
               {themeMode === 'light' && (
@@ -102,7 +102,7 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.optionLeft}>
                 <Ionicons name="moon" size={24} color={theme.text} />
                 <Text style={[styles.optionText, { color: theme.text }]}>
-                  {i18n.t('dark')}
+                  {t('dark')}
                 </Text>
               </View>
               {themeMode === 'dark' && (
@@ -119,7 +119,7 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.optionLeft}>
                 <Ionicons name="phone-portrait" size={24} color={theme.text} />
                 <Text style={[styles.optionText, { color: theme.text }]}>
-                  {i18n.t('system')}
+                  {t('system')}
                 </Text>
               </View>
               {themeMode === 'system' && (
@@ -132,7 +132,7 @@ export const SettingsScreen: React.FC = () => {
         {/* Language Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            {i18n.t('language')}
+            {t('language')}
           </Text>
 
           <View style={[styles.card, { backgroundColor: theme.card }]}>
@@ -142,10 +142,10 @@ export const SettingsScreen: React.FC = () => {
             >
               <View style={styles.optionLeft}>
                 <Text style={[styles.optionText, { color: theme.text }]}>
-                  {i18n.t('vietnamese')}
+                  {t('vietnamese')}
                 </Text>
               </View>
-              {settings.language === 'vi' && (
+              {language === 'vi' && (
                 <Ionicons name="checkmark" size={24} color={theme.primary} />
               )}
             </TouchableOpacity>
@@ -158,10 +158,10 @@ export const SettingsScreen: React.FC = () => {
             >
               <View style={styles.optionLeft}>
                 <Text style={[styles.optionText, { color: theme.text }]}>
-                  {i18n.t('english')}
+                  {t('english')}
                 </Text>
               </View>
-              {settings.language === 'en' && (
+              {language === 'en' && (
                 <Ionicons name="checkmark" size={24} color={theme.primary} />
               )}
             </TouchableOpacity>
@@ -171,7 +171,7 @@ export const SettingsScreen: React.FC = () => {
         {/* Display Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Hiển thị
+            {t('about')}
           </Text>
 
           <View style={[styles.card, { backgroundColor: theme.card }]}>
@@ -179,7 +179,7 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.optionLeft}>
                 <Ionicons name="bulb" size={24} color={theme.text} />
                 <Text style={[styles.optionText, { color: theme.text }]}>
-                  {i18n.t('keepScreenOn')}
+                  {t('keepScreenOn')}
                 </Text>
               </View>
               <Switch
@@ -195,7 +195,7 @@ export const SettingsScreen: React.FC = () => {
         {/* About Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            {i18n.t('about')}
+            {t('about')}
           </Text>
 
           <View style={[styles.card, { backgroundColor: theme.card }]}>
@@ -207,7 +207,7 @@ export const SettingsScreen: React.FC = () => {
                     {appJson.expo.name}
                   </Text>
                   <Text style={[styles.optionSubtext, { color: theme.textSecondary }]}>
-                    {i18n.t('appDescription')}
+                    {t('appDescription')}
                   </Text>
                 </View>
               </View>
@@ -220,7 +220,7 @@ export const SettingsScreen: React.FC = () => {
                 <Ionicons name="code-slash" size={24} color={theme.text} />
                 <View>
                   <Text style={[styles.optionText, { color: theme.text }]}>
-                    {i18n.t('version')}
+                    {t('version')}
                   </Text>
                   <Text style={[styles.optionSubtext, { color: theme.textSecondary }]}>
                     {appJson.expo.version}
@@ -238,7 +238,7 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.optionLeft}>
                 <Ionicons name="shield-checkmark" size={24} color={theme.text} />
                 <Text style={[styles.optionText, { color: theme.text }]}>
-                  {i18n.t('privacyPolicy')}
+                  {t('privacyPolicy')}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={24} color={theme.textSecondary} />
@@ -281,7 +281,7 @@ export const SettingsScreen: React.FC = () => {
 
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            {i18n.t('privacyContent')}
+            {t('privacyContent')}
           </Text>
         </View>
       </ScrollView>

@@ -53,19 +53,28 @@ export const getActiveMatch = (): Match | null => {
 
     const row = rows[0];
     const rounds = getRoundsByMatchId(row.id);
+    const configSnapshot = JSON.parse(row.config_snapshot);
 
-    return {
+    const match: any = {
         id: row.id,
         gameType: row.game_type,
         playerIds: JSON.parse(row.player_ids),
         playerNames: JSON.parse(row.player_names),
-        configSnapshot: JSON.parse(row.config_snapshot),
+        configSnapshot,
         rounds,
         totalScores: JSON.parse(row.total_scores),
         status: row.status,
         createdAt: row.created_at,
         completedAt: row.completed_at || undefined
     };
+
+    // For Sắc Tê matches, extract Cá Heo pot data from config
+    if (row.game_type === 'sac_te') {
+        match.caHeoCurrentPot = configSnapshot._caHeoCurrentPot ?? 0;
+        match.caHeoRoundsAccumulated = configSnapshot._caHeoRoundsAccumulated ?? 0;
+    }
+
+    return match;
 };
 
 // Get match by ID

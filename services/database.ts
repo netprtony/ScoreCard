@@ -204,6 +204,49 @@ export const initDatabase = (): void => {
             ]
         );
 
+        // Sắc Tê configs table
+        db.execSync(
+            `CREATE TABLE IF NOT EXISTS sac_te_configs (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                ca_nuoc_enabled INTEGER NOT NULL,
+                ca_nuoc_he_so INTEGER NOT NULL,
+                ca_heo_enabled INTEGER NOT NULL,
+                ca_heo_he_so INTEGER NOT NULL,
+                he_so_guc INTEGER NOT NULL,
+                he_so_ton INTEGER NOT NULL,
+                white_win_multiplier INTEGER NOT NULL,
+                min_players INTEGER NOT NULL,
+                max_players INTEGER NOT NULL,
+                is_default INTEGER NOT NULL,
+                created_at INTEGER NOT NULL
+            );`
+        );
+
+        // Insert default Sắc Tê config if not exists
+        db.runSync(
+            `INSERT OR IGNORE INTO sac_te_configs (
+                id, name, ca_nuoc_enabled, ca_nuoc_he_so,
+                ca_heo_enabled, ca_heo_he_so,
+                he_so_guc, he_so_ton, white_win_multiplier,
+                min_players, max_players,
+                is_default, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+            [
+                'default_sac_te', 'Cấu hình mặc định',
+                1, 5,  // cá nước enabled, hệ số 5
+                1, 5,  // cá heo enabled, hệ số 5
+                10, 5, 2,  // hệ số gục, tồn, white win multiplier
+                2, 5,  // min/max players
+                1, Date.now()
+            ]
+        );
+
+        // Activate Sắc Tê game type
+        db.runSync(
+            `UPDATE game_types SET is_active = 1 WHERE id = 'sac_te';`
+        );
+
         // Migration: Add missing columns to matches table if they don't exist
         try {
             // Check if matches table exists and what columns it has

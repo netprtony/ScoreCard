@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { updateSettings } from '../services/settingsService';
+import i18n from '../utils/i18n';
 
 export const TermsPrivacyScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -50,11 +51,11 @@ export const TermsPrivacyScreen: React.FC = () => {
           </View>
 
           <Text style={[styles.title, { color: theme.text }]}>
-            Điều khoản sử dụng &{'\n'}Chính sách bảo mật
+            {i18n.t('termsAndPrivacy')}
           </Text>
 
           <Text style={[styles.description, { color: theme.textSecondary }]}>
-            Để tiếp tục sử dụng ứng dụng, vui lòng đọc và chấp nhận các điều khoản sau:
+            {i18n.t('termsContent1')}
           </Text>
         </View>
 
@@ -150,7 +151,7 @@ export const TermsPrivacyScreen: React.FC = () => {
               {acceptedTerms && <Ionicons name="checkmark" size={18} color="#FFF" />}
             </View>
             <Text style={[styles.checkboxText, { color: theme.text }]}>
-              Tôi đã đọc và đồng ý với Điều khoản sử dụng
+              {i18n.t('termsOfService')}
             </Text>
           </TouchableOpacity>
 
@@ -170,7 +171,7 @@ export const TermsPrivacyScreen: React.FC = () => {
               {acceptedPrivacy && <Ionicons name="checkmark" size={18} color="#FFF" />}
             </View>
             <Text style={[styles.checkboxText, { color: theme.text }]}>
-              Tôi đã đọc và đồng ý với Chính sách bảo mật
+              {i18n.t('privacyPolicy')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -180,7 +181,7 @@ export const TermsPrivacyScreen: React.FC = () => {
           <View style={[styles.warningBox, { backgroundColor: theme.error + '15' }]}>
             <Ionicons name="alert-circle" size={20} color={theme.error} />
             <Text style={[styles.warningText, { color: theme.error }]}>
-              Vui lòng chấp nhận cả hai điều khoản để tiếp tục
+              {i18n.t('mustAcceptTerms')}
             </Text>
           </View>
         )}
@@ -199,7 +200,7 @@ export const TermsPrivacyScreen: React.FC = () => {
           disabled={!canContinue}
         >
           <Text style={[styles.buttonText, { opacity: canContinue ? 1 : 0.5 }]}>
-            Đồng ý & Tiếp tục
+            {i18n.t('confirm')} & {i18n.t('continue')}
           </Text>
         </TouchableOpacity>
       </View>

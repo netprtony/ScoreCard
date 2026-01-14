@@ -30,7 +30,11 @@ export const ActiveMatchScreen: React.FC = () => {
   const [showOngoingModal, setShowOngoingModal] = useState(false);
 
   const handleAddRound = () => {
-    navigation.navigate('RoundInput' as never);
+    if (activeMatch?.gameType === 'sac_te') {
+      navigation.navigate('SacTeRoundInput' as never);
+    } else {
+      navigation.navigate('RoundInput' as never);
+    }
   };
 
   const handleEditConfig = () => {
@@ -155,13 +159,13 @@ export const ActiveMatchScreen: React.FC = () => {
         <View style={styles.emptyContainer}>
           <Ionicons name="game-controller-outline" size={64} color={theme.textSecondary} />
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            Chưa có trận đấu nào đang diễn ra
+            {i18n.t('no_match_found')}
           </Text>
           <TouchableOpacity
             style={[styles.startButton, { backgroundColor: theme.primary }]}
             onPress={() => navigation.navigate('GameSelection' as never)}
           >
-            <Text style={styles.startButtonText}>Bắt Đầu Trận Mới</Text>
+            <Text style={styles.startButtonText}>{i18n.t('start_match_new')}</Text>
           </TouchableOpacity>
           
           {/* Show paused matches */}
@@ -181,7 +185,7 @@ export const ActiveMatchScreen: React.FC = () => {
                       {match.playerNames.join(' • ')}
                     </Text>
                     <Text style={[styles.pausedMatchInfo, { color: theme.textSecondary }]}>
-                      {match.rounds.length} ván đã chơi
+                      {match.rounds.length} {i18n.t('rounds')}
                     </Text>
                   </View>
                   <Ionicons name="play-circle" size={32} color={theme.primary} />
@@ -200,11 +204,11 @@ export const ActiveMatchScreen: React.FC = () => {
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.title, { color: theme.text }]}>
-            Trận Đấu Đang Diễn Ra
+            {i18n.t('match_happening')}
           </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Ván {activeMatch.rounds.length + 1}
-            {pausedMatches.length > 0 && ` • ${pausedMatches.length} trận tạm hoãn`}
+            {i18n.t('rounds')} {activeMatch.rounds.length + 1}
+            {pausedMatches.length > 0 && ` • ${pausedMatches.length} ${i18n.t('paused_matches')}`}
           </Text>
         </View>
         <TouchableOpacity
@@ -213,12 +217,14 @@ export const ActiveMatchScreen: React.FC = () => {
         >
           <Ionicons name="pause" size={24} color="#FFF" />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.iconButton, { backgroundColor: theme.surface }]}
-          onPress={handleEditConfig}
-        >
-          <Ionicons name="settings-outline" size={24} color={theme.text} />
-        </TouchableOpacity>
+        {activeMatch.gameType !== 'sac_te' && (
+          <TouchableOpacity
+            style={[styles.iconButton, { backgroundColor: theme.surface }]}
+            onPress={handleEditConfig}
+          >
+            <Ionicons name="settings-outline" size={24} color={theme.text} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Countdown Timer */}
@@ -228,18 +234,19 @@ export const ActiveMatchScreen: React.FC = () => {
 
       {/* Score Table */}
       <View style={[styles.tableContainer, { backgroundColor: theme.card }]}>
-        <Text style={[styles.tableTitle, { color: theme.text }]}>Bảng Điểm</Text>
+        <Text style={[styles.tableTitle, { color: theme.text }]}>{i18n.t('score_table')}</Text>
         {activeMatch.rounds.length > 0 ? (
           <ScoreTable 
             match={activeMatch} 
             editable={true}
             onUpdateRound={handleUpdateRound}
             onDeleteRound={handleDeleteRound}
+            caHeoEnabled={(activeMatch.configSnapshot as any).caHeo?.enabled ?? false}
           />
         ) : (
           <View style={styles.noRoundsContainer}>
             <Text style={[styles.noRoundsText, { color: theme.textSecondary }]}>
-              Chưa có ván nào. Nhấn &quot;Nhập Ván Mới&quot; để bắt đầu!
+              {i18n.t('no_rounds')}
             </Text>
           </View>
         )}
@@ -281,7 +288,7 @@ export const ActiveMatchScreen: React.FC = () => {
           onPress={handleEndMatch}
         >
           <Ionicons name="stop-circle-outline" size={24} color="#FFF" />
-          <Text style={styles.buttonText}>Kết Thúc</Text>
+          <Text style={styles.buttonText}>{i18n.t('end_match')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -289,7 +296,7 @@ export const ActiveMatchScreen: React.FC = () => {
           onPress={handleAddRound}
         >
           <Ionicons name="add-circle-outline" size={24} color="#FFF" />
-          <Text style={styles.buttonText}>Nhập Ván Mới</Text>
+          <Text style={styles.buttonText}>{i18n.t('new_round')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -305,7 +312,7 @@ export const ActiveMatchScreen: React.FC = () => {
             <TouchableOpacity onPress={() => setShowConfigModal(false)}>
               <Ionicons name="close" size={28} color={theme.text} />
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>Sửa Cấu Hình</Text>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>{i18n.t('edit_config')}</Text>
             <TouchableOpacity onPress={handleSaveConfig}>
               <Ionicons name="checkmark" size={28} color={theme.primary} />
             </TouchableOpacity>
@@ -316,10 +323,10 @@ export const ActiveMatchScreen: React.FC = () => {
               <>
                 {/* Hệ số cơ bản */}
                 <View style={[styles.section, { backgroundColor: theme.card }]}>
-                  <Text style={[styles.sectionTitle, { color: theme.text }]}>Hệ Số Cơ Bản</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('baseRatio')}</Text>
                   
                   <View style={styles.inputRow}>
-                    <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số 1:</Text>
+                    <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('base1')}</Text>
                     <TextInput
                       style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                       value={editedConfig.baseRatioFirst.toString()}
@@ -329,7 +336,7 @@ export const ActiveMatchScreen: React.FC = () => {
                   </View>
 
                   <View style={styles.inputRow}>
-                    <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số 2:</Text>
+                    <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('base2')}</Text>
                     <TextInput
                       style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                       value={editedConfig.baseRatioSecond.toString()}
@@ -342,7 +349,7 @@ export const ActiveMatchScreen: React.FC = () => {
                 {/* Tới Trắng */}
                 <View style={[styles.section, { backgroundColor: theme.card }]}>
                   <View style={styles.switchRow}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Tới Trắng</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('toiTrang')}</Text>
                     <Switch
                       value={editedConfig.enableToiTrang}
                       onValueChange={(value) => updateConfigField('enableToiTrang', value)}
@@ -353,7 +360,7 @@ export const ActiveMatchScreen: React.FC = () => {
                   
                   {editedConfig.enableToiTrang && (
                     <View style={styles.inputRow}>
-                      <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số nhân:</Text>
+                      <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('multipliers')}</Text>
                       <TextInput
                         style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                         value={editedConfig.toiTrangMultiplier.toString()}
@@ -367,7 +374,7 @@ export const ActiveMatchScreen: React.FC = () => {
                 {/* Giết */}
                 <View style={[styles.section, { backgroundColor: theme.card }]}>
                   <View style={styles.switchRow}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Giết</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('kill')}</Text>
                     <Switch
                       value={editedConfig.enableKill}
                       onValueChange={(value) => updateConfigField('enableKill', value)}
@@ -378,7 +385,7 @@ export const ActiveMatchScreen: React.FC = () => {
                   
                   {editedConfig.enableKill && (
                     <View style={styles.inputRow}>
-                      <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số nhân:</Text>
+                      <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('multipliers')}</Text>
                       <TextInput
                         style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                         value={editedConfig.killMultiplier.toString()}
@@ -392,7 +399,7 @@ export const ActiveMatchScreen: React.FC = () => {
                 {/* Phạt Thối/Chồng */}
                 <View style={[styles.section, { backgroundColor: theme.card }]}>
                   <View style={styles.switchRow}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Phạt Thối/Chồng</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('penalties')}</Text>
                     <Switch
                       value={editedConfig.enablePenalties}
                       onValueChange={(value) => updateConfigField('enablePenalties', value)}
@@ -404,7 +411,7 @@ export const ActiveMatchScreen: React.FC = () => {
                   {editedConfig.enablePenalties && (
                     <>
                       <View style={styles.inputRow}>
-                        <Text style={[styles.label, { color: theme.textSecondary }]}>Heo đen:</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('heo_den')}</Text>
                         <TextInput
                           style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                           value={editedConfig.penaltyHeoDen.toString()}
@@ -414,7 +421,7 @@ export const ActiveMatchScreen: React.FC = () => {
                       </View>
 
                       <View style={styles.inputRow}>
-                        <Text style={[styles.label, { color: theme.textSecondary }]}>Heo đỏ:</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('heo_do')}</Text>
                         <TextInput
                           style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                           value={editedConfig.penaltyHeoDo.toString()}
@@ -424,7 +431,7 @@ export const ActiveMatchScreen: React.FC = () => {
                       </View>
 
                       <View style={styles.inputRow}>
-                        <Text style={[styles.label, { color: theme.textSecondary }]}>3 đôi thông:</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('ba_doi_thong')}</Text>
                         <TextInput
                           style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                           value={editedConfig.penaltyBaDoiThong.toString()}
@@ -449,7 +456,7 @@ export const ActiveMatchScreen: React.FC = () => {
                 {/* Chặt Heo */}
                 <View style={[styles.section, { backgroundColor: theme.card }]}>
                   <View style={styles.switchRow}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Chặt Heo</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('chatHeo')}</Text>
                     <Switch
                       value={editedConfig.enableChatHeo}
                       onValueChange={(value) => updateConfigField('enableChatHeo', value)}
@@ -461,7 +468,7 @@ export const ActiveMatchScreen: React.FC = () => {
                   {editedConfig.enableChatHeo && (
                     <>
                       <View style={styles.inputRow}>
-                        <Text style={[styles.label, { color: theme.textSecondary }]}>Heo đen:</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('heo_den')}</Text>
                         <TextInput
                           style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                           value={editedConfig.chatHeoBlack.toString()}
@@ -471,7 +478,7 @@ export const ActiveMatchScreen: React.FC = () => {
                       </View>
 
                       <View style={styles.inputRow}>
-                        <Text style={[styles.label, { color: theme.textSecondary }]}>Heo đỏ:</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('heo_do')}</Text>
                         <TextInput
                           style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                           value={editedConfig.chatHeoRed.toString()}

@@ -126,10 +126,10 @@ export const ConfigSetupScreen: React.FC = () => {
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: 16 }}>
           <Text style={[styles.title, { color: theme.text }]}>
-            Cấu Hình Luật Chơi
+            {i18n.t('rule_config')}
           </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Tùy chỉnh hệ số và luật phạt
+            {i18n.t('custom_system_penalty_rules')}
           </Text>
         </View>
       </View>
@@ -137,10 +137,10 @@ export const ConfigSetupScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Hệ số cơ bản */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Hệ Số Cơ Bản</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('baseRatio')}</Text>
           
           <View style={styles.inputRow}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số 1 (1st vs 4th):</Text>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('ratio1')}(1st vs 4th):</Text>
             <TextInput
               style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
               value={config.baseRatioFirst.toString()}
@@ -150,7 +150,7 @@ export const ConfigSetupScreen: React.FC = () => {
           </View>
 
           <View style={styles.inputRow}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số 2 (2nd vs 3rd):</Text>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('ratio2')}(2nd vs 3rd):</Text>
             <TextInput
               style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
               value={config.baseRatioSecond.toString()}
@@ -163,7 +163,7 @@ export const ConfigSetupScreen: React.FC = () => {
         {/* Tới Trắng */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
           <View style={styles.switchRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Tới Trắng</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('toiTrang')}</Text>
             <Switch
               value={config.enableToiTrang}
               onValueChange={(value) => updateConfig('enableToiTrang', value)}
@@ -174,7 +174,7 @@ export const ConfigSetupScreen: React.FC = () => {
           
           {config.enableToiTrang && (
             <View style={styles.inputRow}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số nhân:</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('toiTrangMultiplier')}</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                 value={config.toiTrangMultiplier.toString()}
@@ -188,7 +188,7 @@ export const ConfigSetupScreen: React.FC = () => {
         {/* Giết */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
           <View style={styles.switchRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Giết</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('kill')}</Text>
             <Switch
               value={config.enableKill}
               onValueChange={(value) => updateConfig('enableKill', value)}
@@ -199,7 +199,7 @@ export const ConfigSetupScreen: React.FC = () => {
           
           {config.enableKill && (
             <View style={styles.inputRow}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số nhân:</Text>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('killMultiplier')}</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                 value={config.killMultiplier.toString()}
@@ -213,7 +213,7 @@ export const ConfigSetupScreen: React.FC = () => {
         {/* Phạt Thối/Chồng */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
           <View style={styles.switchRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Phạt Thối/Chồng</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('chongOption')}</Text>
             <Switch
               value={config.enablePenalties}
               onValueChange={(value) => updateConfig('enablePenalties', value)}
@@ -225,7 +225,7 @@ export const ConfigSetupScreen: React.FC = () => {
           {config.enablePenalties && (
             <>
               <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Heo đen:</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('heo_den')}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                   value={config.penaltyHeoDen.toString()}
@@ -235,7 +235,7 @@ export const ConfigSetupScreen: React.FC = () => {
               </View>
 
               <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Heo đỏ:</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('heo_do')}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                   value={config.penaltyHeoDo.toString()}
@@ -245,7 +245,7 @@ export const ConfigSetupScreen: React.FC = () => {
               </View>
 
               <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>3 đôi thông:</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('ba_doi_thong')}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                   value={config.penaltyBaDoiThong.toString()}
@@ -255,7 +255,7 @@ export const ConfigSetupScreen: React.FC = () => {
               </View>
 
               <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Tứ quý:</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('tu_quy')}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                   value={config.penaltyTuQuy.toString()}
@@ -270,7 +270,7 @@ export const ConfigSetupScreen: React.FC = () => {
         {/* Chặt Heo */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
           <View style={styles.switchRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Chặt Heo</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('chatHeo')}</Text>
             <Switch
               value={config.enableChatHeo}
               onValueChange={(value) => updateConfig('enableChatHeo', value)}
@@ -282,7 +282,7 @@ export const ConfigSetupScreen: React.FC = () => {
           {config.enableChatHeo && (
             <>
               <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Heo đen:</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('heo_den')}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                   value={config.chatHeoBlack.toString()}
@@ -292,7 +292,7 @@ export const ConfigSetupScreen: React.FC = () => {
               </View>
 
               <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Heo đỏ:</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('heo_do')}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                   value={config.chatHeoRed.toString()}
@@ -327,15 +327,15 @@ export const ConfigSetupScreen: React.FC = () => {
                   keyboardType="numeric"
                 />
               </View> */}
-              <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Phạt thối 3 tép:</Text>
+              {/* <View style={styles.inputRow}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('penaltyBaTep')}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                   value={config.penaltyBaTep.toString()}
                   onChangeText={(text) => updateConfig('penaltyBaTep', parseInt(text) || 0)}
                   keyboardType="numeric"
                 />
-              </View>
+              </View> */}
             </>
           )}
         </View>
@@ -345,7 +345,7 @@ export const ConfigSetupScreen: React.FC = () => {
         style={[styles.startButton, { backgroundColor: theme.primary }]}
         onPress={handleStartMatch}
       >
-        <Text style={styles.startButtonText}>Bắt Đầu Trận Đấu</Text>
+        <Text style={styles.startButtonText}>{i18n.t('start_match')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

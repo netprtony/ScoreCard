@@ -94,12 +94,12 @@ export const MatchHistoryScreen: React.FC = () => {
 
   const handleContinueMatch = (match: Match) => {
     Alert.alert(
-      'Tiếp tục trận đấu',
+      i18n.t('continueMatch'),
       'Bạn có chắc muốn tiếp tục trận đấu này? Trận đấu sẽ trở thành trận đang diễn ra.',
       [
         { text: i18n.t('cancel'), style: 'cancel' },
         {
-          text: 'Tiếp tục',
+          text: i18n.t('continue'),
           onPress: () => {
             try {
               resumeMatch(match.id);
@@ -222,7 +222,7 @@ export const MatchHistoryScreen: React.FC = () => {
             {winnerName}
           </Text>
           <Text style={[styles.winnerScore, { color: theme.success }]}>
-            {winnerScore > 0 ? '+' : ''}{winnerScore.toLocaleString('vi-VN')}
+            {winnerScore > 0 ? '+' : ''}{(winnerScore ?? 0).toLocaleString('vi-VN')}
           </Text>
         </View>
 
@@ -391,7 +391,7 @@ export const MatchHistoryScreen: React.FC = () => {
                         styles.playerScoreValue,
                         { color: player.score >= 0 ? theme.success : theme.error }
                       ]}>
-                        {player.score > 0 ? '+' : ''}{player.score.toLocaleString('vi-VN')}
+                        {player.score > 0 ? '+' : ''}{(player.score ?? 0).toLocaleString('vi-VN')}
                       </Text>
                     </View>
                   </View>
@@ -430,35 +430,84 @@ export const MatchHistoryScreen: React.FC = () => {
                 </>
               )}
 
-              <View style={[styles.configCard, { backgroundColor: theme.card }]}>
-                <Text style={[styles.configTitle, { color: theme.text }]}>
-                  Cấu hình đã dùng
-                </Text>
-                <View style={styles.configRow}>
-                  <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
-                    Hệ số cơ bản:
+              {/* Config display based on game type */}
+              {selectedMatch.gameType === 'sac_te' ? (
+                <View style={[styles.configCard, { backgroundColor: theme.card }]}>
+                  <Text style={[styles.configTitle, { color: theme.text }]}>
+                    Cấu hình đã dùng (Sắc Tê)
                   </Text>
-                  <Text style={[styles.configValue, { color: theme.text }]}>
-                    {selectedMatch.configSnapshot.baseRatioFirst}:{selectedMatch.configSnapshot.baseRatioSecond}
-                  </Text>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
+                      Hệ số Gục:
+                    </Text>
+                    <Text style={[styles.configValue, { color: theme.text }]}>
+                      {(selectedMatch.configSnapshot as any).heSoGuc ?? 'N/A'}
+                    </Text>
+                  </View>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
+                      Hệ số Tồn:
+                    </Text>
+                    <Text style={[styles.configValue, { color: theme.text }]}>
+                      {(selectedMatch.configSnapshot as any).heSoTon ?? 'N/A'}
+                    </Text>
+                  </View>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
+                      Hệ số Tới Trắng:
+                    </Text>
+                    <Text style={[styles.configValue, { color: theme.text }]}>
+                      ×{(selectedMatch.configSnapshot as any).whiteWinMultiplier ?? 'N/A'}
+                    </Text>
+                  </View>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
+                      Cá Nước:
+                    </Text>
+                    <Text style={[styles.configValue, { color: theme.text }]}>
+                      {(selectedMatch.configSnapshot as any).caNuoc?.enabled ? `Bật (${(selectedMatch.configSnapshot as any).caNuoc.heSo})` : 'Tắt'}
+                    </Text>
+                  </View>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
+                      Cá Heo:
+                    </Text>
+                    <Text style={[styles.configValue, { color: theme.text }]}>
+                      {(selectedMatch.configSnapshot as any).caHeo?.enabled ? `Bật (${(selectedMatch.configSnapshot as any).caHeo.heSo})` : 'Tắt'}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.configRow}>
-                  <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
-                    Hệ số tới trắng:
+              ) : (
+                <View style={[styles.configCard, { backgroundColor: theme.card }]}>
+                  <Text style={[styles.configTitle, { color: theme.text }]}>
+                    Cấu hình đã dùng (Tiến Lên)
                   </Text>
-                  <Text style={[styles.configValue, { color: theme.text }]}>
-                    ×{selectedMatch.configSnapshot.toiTrangMultiplier}
-                  </Text>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
+                      Hệ số cơ bản:
+                    </Text>
+                    <Text style={[styles.configValue, { color: theme.text }]}>
+                      {(selectedMatch.configSnapshot as any).baseRatioFirst ?? 'N/A'}:{(selectedMatch.configSnapshot as any).baseRatioSecond ?? 'N/A'}
+                    </Text>
+                  </View>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
+                      Hệ số tới trắng:
+                    </Text>
+                    <Text style={[styles.configValue, { color: theme.text }]}>
+                      ×{(selectedMatch.configSnapshot as any).toiTrangMultiplier ?? 'N/A'}
+                    </Text>
+                  </View>
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
+                      Hệ số giết:
+                    </Text>
+                    <Text style={[styles.configValue, { color: theme.text }]}>
+                      ×{(selectedMatch.configSnapshot as any).killMultiplier ?? 'N/A'}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.configRow}>
-                  <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
-                    Hệ số giết:
-                  </Text>
-                  <Text style={[styles.configValue, { color: theme.text }]}>
-                    ×{selectedMatch.configSnapshot.killMultiplier}
-                  </Text>
-                </View>
-              </View>
+              )}
             </ScrollView>
           )}
         </SafeAreaView>

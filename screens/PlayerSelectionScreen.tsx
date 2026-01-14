@@ -46,24 +46,40 @@ export const PlayerSelectionScreen: React.FC = () => {
     if (selectedPlayers.find(p => p.id === player.id)) {
       setSelectedPlayers(selectedPlayers.filter(p => p.id !== player.id));
     } else {
-      if (selectedPlayers.length < 4) {
+      const maxPlayers = gameType?.id === 'sac_te' ? 5 : 4;
+      if (selectedPlayers.length < maxPlayers) {
         setSelectedPlayers([...selectedPlayers, player]);
       } else {
-        showWarning('Lỗi', 'Chỉ được chọn tối đa 4 người chơi');
+        showWarning('Lỗi', `Chỉ được chọn tối đa ${maxPlayers} người chơi`);
       }
     }
   };
 
   const handleNext = () => {
-    if (selectedPlayers.length !== 4) {
-      showWarning('Lỗi', 'Vui lòng chọn đúng 4 người chơi');
+    const minPlayers = gameType?.id === 'sac_te' ? 2 : 4;
+    const maxPlayers = gameType?.id === 'sac_te' ? 5 : 4;
+    
+    if (selectedPlayers.length < minPlayers || selectedPlayers.length > maxPlayers) {
+      if (minPlayers === maxPlayers) {
+        showWarning('Lỗi', `Vui lòng chọn đúng ${minPlayers} người chơi`);
+      } else {
+        showWarning('Lỗi', `Vui lòng chọn ${minPlayers}-${maxPlayers} người chơi`);
+      }
       return;
     }
 
-    navigation.navigate('ConfigSetup', {
-      gameType,
-      playerIds: selectedPlayers.map(p => p.id)
-    });
+    // Route to appropriate config screen based on game type
+    if (gameType?.id === 'sac_te') {
+      navigation.navigate('SacTeConfigSetup', {
+        gameType,
+        playerIds: selectedPlayers.map(p => p.id)
+      });
+    } else {
+      navigation.navigate('ConfigSetup', {
+        gameType,
+        playerIds: selectedPlayers.map(p => p.id)
+      });
+    }
   };
 
   return (
@@ -77,14 +93,14 @@ export const PlayerSelectionScreen: React.FC = () => {
             {gameType?.name || 'Chọn Người Chơi'}
           </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Chọn 4 người chơi
+            {gameType?.id === 'sac_te' ? 'Chọn 2-5 người chơi' : 'Chọn 4 người chơi'}
           </Text>
         </View>
       </View>
 
       <View style={[styles.selectedContainer, { backgroundColor: theme.surface }]}>
         <Text style={[styles.selectedTitle, { color: theme.text }]}>
-          Đã chọn: {selectedPlayers.length}/4
+          Đã chọn: {selectedPlayers.length}/{gameType?.id === 'sac_te' ? '2-5' : '4'}
         </Text>
         <View style={styles.selectedPlayers}>
           {selectedPlayers.map((player) => (
@@ -115,11 +131,20 @@ export const PlayerSelectionScreen: React.FC = () => {
         style={[
           styles.fab,
           {
-            backgroundColor: selectedPlayers.length === 4 ? theme.primary : theme.disabled,
+            backgroundColor: (() => {
+              const minPlayers = gameType?.id === 'sac_te' ? 2 : 4;
+              const maxPlayers = gameType?.id === 'sac_te' ? 5 : 4;
+              const isValid = selectedPlayers.length >= minPlayers && selectedPlayers.length <= maxPlayers;
+              return isValid ? theme.primary : theme.disabled;
+            })(),
           },
         ]}
         onPress={handleNext}
-        disabled={selectedPlayers.length !== 4}
+        disabled={(() => {
+          const minPlayers = gameType?.id === 'sac_te' ? 2 : 4;
+          const maxPlayers = gameType?.id === 'sac_te' ? 5 : 4;
+          return selectedPlayers.length < minPlayers || selectedPlayers.length > maxPlayers;
+        })()}
       >
         <Ionicons name="arrow-forward" size={24} color="#FFF" />
       </TouchableOpacity>

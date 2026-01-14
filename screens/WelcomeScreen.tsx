@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { VideoView, useVideoPlayer } from 'expo-video';
+import i18n from '../utils/i18n';
 
 const { width, height } = Dimensions.get('window');
 
@@ -62,7 +63,7 @@ export const WelcomeScreen: React.FC = () => {
           <View style={[styles.slide, { width }]}>
             <View style={styles.content}>
               <Text style={styles.title}>
-                Chào mừng đến với{'\n'}Koya Score
+                {i18n.t('welcomeTitle')}
               </Text>
               {/* <View style={styles.iconContainer}>
                 <Image source={require('../assets/mainLogoApp.png')} style={styles.icon} />
@@ -71,21 +72,21 @@ export const WelcomeScreen: React.FC = () => {
                 <View style={styles.feature}>
                   <Ionicons name="flash" size={24} color="#FFD700" />
                   <Text style={styles.featureText}>
-                    Tính điểm nhanh
+                    {i18n.t('quickScoring')}
                   </Text>
                 </View>
 
                 <View style={styles.feature}>
                   <Ionicons name="qr-code-sharp" size={24} color="#FFD700" />
                   <Text style={styles.featureText}>
-                    Có quảng cáo nhẹ
+                    {i18n.t('lightAds')}
                   </Text>
                 </View>
 
                 <View style={styles.feature}>
                   <Ionicons name="shield-checkmark" size={24} color="#FFD700" />
                   <Text style={styles.featureText}>
-                    Không thu thập dữ liệu
+                    {i18n.t('noDataCollection')}
                   </Text>
                 </View>
               </View>
@@ -100,27 +101,27 @@ export const WelcomeScreen: React.FC = () => {
               </View>
 
               <Text style={styles.title}>
-                Quyền riêng tư của bạn
+                {i18n.t('yourPrivacy')}
               </Text>
 
               <Text style={styles.description}>
-                Chúng tôi tôn trọng quyền riêng tư của bạn.
+                {i18n.t('privacyRespect')}
               </Text>
 
               <Text style={styles.description}>
-                App chỉ lưu dữ liệu trên thiết bị của bạn. Không có thông tin nào được gửi đến máy chủ bên ngoài.
+                {i18n.t('localDataOnly')}
               </Text>
 
               <View style={styles.infoBox}>
                 <Ionicons name="information-circle" size={20} color="#FFD700" />
                 <Text style={styles.infoText}>
-                  Tất cả dữ liệu điểm số và lịch sử đều được lưu trữ cục bộ trên thiết bị của bạn
+                  {i18n.t('localStorageInfo')}
                 </Text>
               </View>
               <View style={styles.infoBox}>
                 <Ionicons name="information-circle" size={20} color="#FFD700" />
                 <Text style={styles.infoText}>
-                  Hãy bật wifi để có thể giảm bớt quảng cáo
+                  {i18n.t('wifiAdInfo')}
                 </Text>
               </View>
             </View>
@@ -150,7 +151,7 @@ export const WelcomeScreen: React.FC = () => {
             onPress={handleContinue}
           >
             <Text style={styles.buttonText}>
-              {currentSlide < 1 ? 'Tiếp tục' : 'Bắt đầu'}
+              {currentSlide < 1 ? i18n.t('continue') : i18n.t('getStarted')}
             </Text>
           </TouchableOpacity>
         </View>

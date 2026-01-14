@@ -205,3 +205,92 @@ export interface TimerState {
     isRunning: boolean;
     isEnabled: boolean;
 }
+
+// ============================================
+// SẮC TÊ GAME MODELS
+// ============================================
+
+// Sắc Tê Scoring Configuration
+export interface SacTeConfig {
+    id: string;
+    name: string;
+
+    // Betting rules
+    caNuoc: {
+        enabled: boolean;
+        heSo: number;  // Points each player contributes to main pot
+    };
+
+    caHeo: {
+        enabled: boolean;
+        heSo: number;  // Points each player contributes to side pot
+    };
+
+    // Scoring multipliers
+    heSoGuc: number;              // Penalty for gục players (e.g., 10)
+    heSoTon: number;              // Penalty for tồn players (e.g., 5)
+    whiteWinMultiplier: number;   // Multiplier for White Win (e.g., 2)
+
+    // Game settings
+    minPlayers: number;    // Default: 2
+    maxPlayers: number;    // Default: 5
+
+    isDefault: boolean;
+    createdAt: number;
+}
+
+// Sắc Tê Round Outcome (Dealer Input)
+export interface SacTeRoundOutcome {
+    // Winner designation
+    winnerId: string;
+    isWhiteWin: boolean;
+
+    // Player statuses (dealer assigns)
+    playerStatuses: {
+        playerId: string;
+        isGuc: boolean;
+        hasTon: boolean;
+    }[];
+
+    // Pot winners (dealer designates)
+    caNuocWinnerId?: string;  // Usually same as winnerId
+    caHeoWinnerId?: string;   // May be null (pot carries over)
+}
+
+// Sắc Tê Round (represents one game/ván)
+export interface SacTeRound {
+    id: string;
+    matchId: string;
+    roundNumber: number;
+
+    // Round outcome
+    outcome: SacTeRoundOutcome;
+
+    // Calculated scores for this round
+    roundScores: { [playerId: string]: number };
+
+    // Pot state
+    caHeoAccumulated: number;  // Virtual pot value before this round
+    caHeoRoundsAccumulated: number;  // Number of rounds pot has accumulated
+
+    createdAt: number;
+}
+
+// Sắc Tê Match (container for multiple rounds)
+export interface SacTeMatch {
+    id: string;
+    gameType: 'sac_te';
+    playerIds: string[];  // 2-5 players
+    playerNames: string[];  // Snapshot for history
+    configSnapshot: SacTeConfig;  // Can be edited during match
+    rounds: SacTeRound[];  // Multiple rounds
+    totalScores: { [playerId: string]: number };  // Cumulative
+
+    // Pot tracking
+    caHeoCurrentPot: number;  // Current accumulated pot value
+    caHeoRoundsAccumulated: number;  // Rounds without winner
+
+    status: 'active' | 'paused' | 'completed';
+    createdAt: number;
+    completedAt?: number;
+}

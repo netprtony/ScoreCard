@@ -13,6 +13,9 @@ export type MatchStackParamList = {
         onUpdateRound: (roundId: string, scores: { [playerId: string]: number }) => void;
         onDeleteRound: (roundId: string) => void;
     };
+    // Sắc Tê screens
+    SacTeConfigSetup: { gameType: GameType; playerIds: string[] };
+    SacTeRoundInput: { matchId: string };
 };
 
 // Define the parameter list for the Root Tab Navigator

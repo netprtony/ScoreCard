@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { PlayerListScreen } from '../screens/PlayerListScreen';
 import { GameSelectionScreen } from '../screens/GameSelectionScreen';
 import { PlayerSelectionScreen } from '../screens/PlayerSelectionScreen';
@@ -17,8 +18,10 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { SplashScreen } from '../screens/SplashScreen';
 import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { TermsPrivacyScreen } from '../screens/TermsPrivacyScreen';
+import { SacTeConfigSetupScreen } from '../screens/SacTeConfigSetupScreen';
+import { SacTeRoundInputScreen } from '../screens/SacTeRoundInputScreen';
 import { getSettings } from '../services/settingsService';
-import i18n from '../utils/i18n';
+import { Fonts } from '../constants/fonts';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -48,6 +51,9 @@ const MatchStack: React.FC = () => {
       <Stack.Screen name="ConfigSetup" component={ConfigSetupScreen} />
       <Stack.Screen name="RoundInput" component={RoundInputScreen} />
       <Stack.Screen name="RoundDetails" component={RoundDetailsScreen} />
+      {/* Sắc Tê Screens */}
+      <Stack.Screen name="SacTeConfigSetup" component={SacTeConfigSetupScreen} />
+      <Stack.Screen name="SacTeRoundInput" component={SacTeRoundInputScreen} />
     </Stack.Navigator>
   );
 };
@@ -55,6 +61,7 @@ const MatchStack: React.FC = () => {
 // Main Tab Navigator
 const MainTabNavigator: React.FC = () => {
   const { theme, isDark } = useTheme();
+  const { t } = useLanguage();
 
   return (
     <Tab.Navigator
@@ -89,24 +96,24 @@ const MainTabNavigator: React.FC = () => {
         <Tab.Screen
           name="Players"
           component={PlayerListScreen}
-          options={{ tabBarLabel: i18n.t('players') }}
+          options={{ tabBarLabel: t('players') }}
         />
         <Tab.Screen
           name="Matches"
           component={MatchStack}
-          options={{ tabBarLabel: i18n.t('matches') }}
+          options={{ tabBarLabel: t('matches') }}
         />
         <Tab.Screen
           name="History"
           component={MatchHistoryScreen}
-          options={{ tabBarLabel: i18n.t('history') }}
+          options={{ tabBarLabel: t('history') }}
         />
         <Tab.Screen
           name="Statistics"
           component={StatisticsScreen}
-          options={{ tabBarLabel: i18n.t('statistics') }}
+          options={{ tabBarLabel: t('statistics') }}
         />
-        <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: i18n.t('settings') }} />
+        <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: t('settings') }} />
     </Tab.Navigator>
   );
 };
@@ -150,19 +157,19 @@ export const AppNavigator: React.FC = () => {
         },
         fonts: {
           regular: {
-            fontFamily: 'System',
+            fontFamily: Fonts.normal,
             fontWeight: '400',
           },
           medium: {
-            fontFamily: 'System',
+            fontFamily: Fonts.medium,
             fontWeight: '500',
           },
           bold: {
-            fontFamily: 'System',
+            fontFamily: Fonts.bold,
             fontWeight: '700',
           },
           heavy: {
-            fontFamily: 'System',
+            fontFamily: Fonts.black,
             fontWeight: '900',
           },
         },

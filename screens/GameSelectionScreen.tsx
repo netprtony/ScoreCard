@@ -11,15 +11,16 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { GameType } from '../types/models';
 import { MatchStackParamList } from '../types/navigation';
 import { getAllGameTypes } from '../services/gameTypeService';
-import i18n from '../utils/i18n';
 
 type GameSelectionNavigationProp = NativeStackNavigationProp<MatchStackParamList, 'GameSelection'>;
 
 export const GameSelectionScreen: React.FC = () => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const navigation = useNavigation<GameSelectionNavigationProp>();
   const [gameTypes, setGameTypes] = useState<GameType[]>([]);
 
@@ -75,7 +76,7 @@ export const GameSelectionScreen: React.FC = () => {
       ) : (
         <View style={[styles.comingSoonBadge, { backgroundColor: theme.warning + '20' }]}>
           <Text style={[styles.comingSoonText, { color: theme.warning }]}>
-            Sắp ra mắt
+            {t('comingSoon')}
           </Text>
         </View>
       )}
@@ -86,10 +87,10 @@ export const GameSelectionScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>
-          Chọn Trò Chơi
+          {t('selectGame')}
         </Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Chọn loại game bạn muốn chơi
+          {t('selectGameType')}
         </Text>
       </View>
 

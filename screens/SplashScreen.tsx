@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, Image, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
+import i18n from '../utils/i18n';
 
 export const SplashScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -24,10 +25,10 @@ export const SplashScreen: React.FC = () => {
           <Image source={require('../assets/logoSplashScreen.png')} style={styles.logo} />
         </View>
         
-        <Text style={[styles.appName, {color: theme.text}]} >Koya Score</Text>
+        <Text style={[styles.appName, {color: theme.text}]} >{i18n.t('appName')}</Text>
         
         <Text style={[styles.tagline, {color: theme.textSecondary}]}>
-          Tính điểm nhanh – Công bằng – Offline
+          {i18n.t('splashTagline')}
         </Text>
       </View>
     </SafeAreaView>

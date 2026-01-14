@@ -2,6 +2,10 @@ import { I18n } from 'i18n-js';
 
 const translations = {
     vi: {
+        continue_match: 'Tiếp tục trận',
+        custom_system_penalty_rules: 'Tùy chỉnh hệ số và luật phạt',
+        rule_config: 'Cấu Hình Luật Chơi',
+        edit_config: 'Sửa Cấu Hình',
         // Common
         type: 'Loại',
         calculateAndSave: 'Tính điểm và lưu',
@@ -35,6 +39,28 @@ const translations = {
         rank: 'Hạng',
         scoreChange: 'Thay đổi điểm',
 
+        // Game Selection
+        selectGame: 'Chọn Trò Chơi',
+        selectGameType: 'Chọn loại game bạn muốn chơi',
+        comingSoon: 'Sắp ra mắt',
+
+        // Player Selection
+        selectPlayersForMatch: 'Chọn người chơi cho trận đấu',
+        selectedPlayers: 'Đã chọn',
+        noPlayersAvailable: 'Chưa có người chơi nào',
+        addPlayersFirst: 'Thêm người chơi trong tab Người chơi trước',
+
+        // Active Match
+        addRound: 'Thêm ván',
+        viewDetails: 'Xem chi tiết',
+        noRoundsYet: 'Chưa có ván nào',
+        startFirstRound: 'Nhấn + để bắt đầu ván đầu tiên',
+
+        // Match History
+        noMatchHistory: 'Chưa có lịch sử trận đấu',
+        playMatchesToSeeHistory: 'Chơi một vài trận để xem lịch sử',
+        rounds: 'ván',
+
         // Scoring Rules
         toiTrang: 'Tới trắng',
         killed: 'Người bị giết',
@@ -64,7 +90,7 @@ const translations = {
         ratio1: 'Hệ tới nhất',
         ratio2: 'Hệ tới hai',
         multipliers: 'Hệ số nhân',
-        toiTrangMultiplier: 'Hệ tới trắng',
+        toiTrangMultiplier: 'Hệ số tới trắng',
         killMultiplier: 'Hệ số giết',
         penaltyValues: 'Giá trị phạt',
         enableRules: 'Bật/Tắt luật',
@@ -72,6 +98,7 @@ const translations = {
         createConfig: 'Tạo cấu hình',
         editConfig: 'Sửa cấu hình',
         deleteConfig: 'Xóa cấu hình',
+        penalties: 'Phạt Thối/Chồng',
 
         // Statistics
         totalMatches: 'Tổng số trận',
@@ -79,6 +106,12 @@ const translations = {
         winCount: 'Số lần thắng',
         killCount: 'Số lần giết',
         roundTotal: 'Tổng điểm vòng',
+        sortByScore: 'Điểm cao nhất',
+        sortByWins: 'Nhiều thắng nhất',
+        sortByMatches: 'Nhiều trận nhất',
+        winRate: 'thắng',
+        noStatsYet: 'Chưa có dữ liệu thống kê',
+        playToSeeStats: 'Chơi một vài trận để xem thống kê',
 
         // Settings
         theme: 'Giao diện',
@@ -170,8 +203,83 @@ const translations = {
         stillWantToSave: 'Vẫn muốn lưu?',
         roundSaved: 'Đã lưu ván',
         tapToViewDetails: 'Nhấn để xem chi tiết',
+
+        // SplashScreen
+        splashTagline: 'Tính điểm nhanh – Công bằng – Offline',
+
+        // WelcomeScreen
+        welcomeTitle: 'Chào mừng đến với\nKoya Score',
+        quickScoring: 'Tính điểm nhanh',
+        lightAds: 'Có quảng cáo nhẹ',
+        noDataCollection: 'Không thu thập dữ liệu',
+        yourPrivacy: 'Quyền riêng tư của bạn',
+        privacyRespect: 'Chúng tôi tôn trọng quyền riêng tư của bạn.',
+        localDataOnly: 'App chỉ lưu dữ liệu trên thiết bị của bạn. Không có thông tin nào được gửi đến máy chủ bên ngoài.',
+        localStorageInfo: 'Tất cả dữ liệu điểm số và lịch sử đều được lưu trữ cục bộ trên thiết bị của bạn',
+        wifiAdInfo: 'Hãy bật wifi để có thể giảm bớt quảng cáo',
+        continue: 'Tiếp tục',
+        getStarted: 'Bắt đầu',
+
+        // TermsPrivacyScreen
+        termsAndPrivacy: 'Điều khoản & Quyền riêng tư',
+        termsOfService: 'Điều khoản dịch vụ',
+        viewTerms: 'Xem điều khoản',
+        viewPrivacy: 'Xem chính sách',
+        acceptTerms: 'Tôi đồng ý với điều khoản sử dụng và chính sách quyền riêng tư',
+        mustAcceptTerms: 'Bạn phải đồng ý với điều khoản để tiếp tục',
+        termsContent1: 'Bằng cách sử dụng ứng dụng này, bạn đồng ý với các điều khoản sau:',
+        termsPoint1: 'Ứng dụng được cung cấp "như hiện tại" mà không có bất kỳ bảo đảm nào',
+        termsPoint2: 'Bạn chịu trách nhiệm về việc sử dụng ứng dụng',
+        termsPoint3: 'Chúng tôi có quyền cập nhật ứng dụng bất cứ lúc nào',
+        termsPoint4: 'Bạn không được sử dụng ứng dụng cho mục đích bất hợp pháp',
+        privacyContent1: 'Chúng tôi cam kết bảo vệ quyền riêng tư của bạn:',
+        privacyPoint1: 'Tất cả dữ liệu được lưu trữ cục bộ trên thiết bị',
+        privacyPoint2: 'Không thu thập thông tin cá nhân',
+        privacyPoint3: 'Không chia sẻ dữ liệu với bên thứ ba',
+        privacyPoint4: 'Bạn có toàn quyền kiểm soát dữ liệu của mình',
+
+        // RoundDetailsScreen
+        roundDetails: 'Chi tiết ván',
+        round: 'Ván',
+        totalScoreChange: 'Tổng thay đổi điểm',
+        actions: 'Hành động',
+        noActions: 'Không có hành động nào',
+        scoreBreakdown: 'Chi tiết điểm',
+        editRound: 'Sửa ván',
+        deleteRound: 'Xóa ván',
+        confirmDeleteRound: 'Bạn có chắc muốn xóa ván này?',
+        roundDeleted: 'Đã xóa ván',
+        roundUpdated: 'Đã cập nhật ván',
+        first: 'Nhất',
+        second: 'Nhì',
+        third: 'Ba',
+        fourth: 'Tư',
+        start_match: 'Bắt đầu trận đấu',
+        no_match_found: 'Chưa có trận đấu nào đang diễn ra',
+        start_match_new: 'Bắt đầu trận đấu mới',
+        match_happening: 'Trận Đấu Đang Diễn Ra',
+        paused_matches: 'Tạm dừng trận đấu',
+        score_table: 'Bảng Điểm',
+        no_rounds: 'Chưa có ván nào. Nhấn + để bắt đầu!',
+        end_match: 'Kết Thúc',
+        new_round: 'Nhập Ván Mới',
+
     },
     en: {
+        penalties: 'Penalties',
+        new_round: 'New Round',
+        end_match: 'End Match',
+        no_rounds: 'No rounds. Press + to start!',
+        score_table: 'Score Table',
+        paused_matches: 'Paused matches',
+        match_happening: 'Match is happening',
+        start_match_new: 'Start new match',
+        no_match_found: 'No match found',
+        start_match: 'Start match',
+        continue_match: 'Continue match',
+        custom_system_penalty_rules: 'Custom system and penalty rules',
+        rule_config: 'Rule Config',
+        edit_config: 'Edit Config',
         // Common
         type: 'Type',
         calculateAndSave: 'Calculate and Save',
@@ -249,6 +357,12 @@ const translations = {
         winCount: 'Win Count',
         killCount: 'Kill Count',
         roundTotal: 'Round Total',
+        sortByScore: 'Highest Score',
+        sortByWins: 'Most Wins',
+        sortByMatches: 'Most Matches',
+        winRate: 'win rate',
+        noStatsYet: 'No statistics yet',
+        playToSeeStats: 'Play some matches to see statistics',
 
         // Settings
         theme: 'Theme',
@@ -340,6 +454,57 @@ const translations = {
         stillWantToSave: 'Still want to save?',
         roundSaved: 'Round saved',
         tapToViewDetails: 'Tap to view details',
+
+        // SplashScreen
+        splashTagline: 'Quick Scoring – Fair – Offline',
+
+        // WelcomeScreen
+        welcomeTitle: 'Welcome to\nKoya Score',
+        quickScoring: 'Quick Scoring',
+        lightAds: 'Light Ads',
+        noDataCollection: 'No Data Collection',
+        yourPrivacy: 'Your Privacy',
+        privacyRespect: 'We respect your privacy.',
+        localDataOnly: 'The app only stores data on your device. No information is sent to external servers.',
+        localStorageInfo: 'All score and history data is stored locally on your device',
+        wifiAdInfo: 'Turn on wifi to reduce ads',
+        continue: 'Continue',
+        getStarted: 'Get Started',
+
+        // TermsPrivacyScreen
+        termsAndPrivacy: 'Terms & Privacy',
+        termsOfService: 'Terms of Service',
+        viewTerms: 'View Terms',
+        viewPrivacy: 'View Privacy',
+        acceptTerms: 'I agree to the terms of use and privacy policy',
+        mustAcceptTerms: 'You must accept the terms to continue',
+        termsContent1: 'By using this app, you agree to the following terms:',
+        termsPoint1: 'The app is provided "as is" without any warranties',
+        termsPoint2: 'You are responsible for your use of the app',
+        termsPoint3: 'We reserve the right to update the app at any time',
+        termsPoint4: 'You may not use the app for illegal purposes',
+        privacyContent1: 'We are committed to protecting your privacy:',
+        privacyPoint1: 'All data is stored locally on your device',
+        privacyPoint2: 'No personal information is collected',
+        privacyPoint3: 'No data is shared with third parties',
+        privacyPoint4: 'You have full control over your data',
+
+        // RoundDetailsScreen
+        roundDetails: 'Round Details',
+        round: 'Round',
+        totalScoreChange: 'Total Score Change',
+        actions: 'Actions',
+        noActions: 'No actions',
+        scoreBreakdown: 'Score Breakdown',
+        editRound: 'Edit Round',
+        deleteRound: 'Delete Round',
+        confirmDeleteRound: 'Are you sure you want to delete this round?',
+        roundDeleted: 'Round deleted',
+        roundUpdated: 'Round updated',
+        first: 'First',
+        second: 'Second',
+        third: 'Third',
+        fourth: 'Fourth',
     }
 };
 

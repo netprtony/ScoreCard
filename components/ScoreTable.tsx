@@ -11,6 +11,7 @@ interface ScoreTableProps {
   onUpdateRound?: (roundId: string, scores: { [playerId: string]: number }) => void;
   onDeleteRound?: (roundId: string) => void;
   editable?: boolean;
+  caHeoEnabled?: boolean;
 }
 
 type NavigationProp = NativeStackNavigationProp<MatchStackParamList, 'RoundDetails'>;
@@ -19,7 +20,8 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
   match, 
   onUpdateRound,
   onDeleteRound,
-  editable = false 
+  editable = false,
+  caHeoEnabled = false
 }) => {
   const { theme } = useTheme();
   const navigation = useNavigation<NavigationProp>();
@@ -28,6 +30,21 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
   const getRoundSum = (roundIndex: number): number => {
     const round = match.rounds[roundIndex];
     return Object.values(round.roundScores).reduce((sum, score) => sum + score, 0);
+  };
+
+  // Extract Cá Heo pot from round data
+  const getCaHeoPotForRound = (round: any): number => {
+    // For Sắc Tê rounds, pot info is stored in actions field
+    if (round.actions && typeof round.actions === 'object') {
+      const actions = round.actions as any;
+      if (actions.outcome?.caHeoWinnerId) {
+        // Someone won the pot this round, show 0
+        return 0;
+      }
+      // Check if pot data is stored
+      return actions.caHeoPot ?? 0;
+    }
+    return 0;
   };
 
   const handleRowPress = (roundId: string) => {
@@ -66,6 +83,14 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
               <View style={[styles.cell, styles.headerCell, { backgroundColor: theme.warning + '20' }]}>
                 <Text style={[styles.headerText, { color: theme.warning }]}>Sum</Text>
               </View>
+              
+              {/* Heo column */}
+              {caHeoEnabled && (
+                <View style={[styles.cell, styles.headerCell, { backgroundColor: theme.success + '20' }]}>
+                  <Text style={[styles.headerText, { color: theme.success }]}>🐷 Heo</Text>
+                </View>
+              )}
+              
               {match.playerNames.map((name, index) => (
                 <View
                   key={index}
@@ -108,6 +133,15 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
                   </Text>
                 </View>
                 
+                {/* Heo column - not touchable */}
+                {caHeoEnabled && (
+                  <View style={[styles.cell, { backgroundColor: theme.success + '10' }]}>
+                    <Text style={[styles.cellText, { color: theme.success, fontWeight: '600' }]}>
+                      {getCaHeoPotForRound(round)}
+                    </Text>
+                  </View>
+                )}
+                
                 {/* Player score columns - not touchable */}
                 {match.playerIds.map((playerId, playerIndex) => {
                   const score = round.roundScores[playerId] || 0;
@@ -139,6 +173,13 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
                   {Object.values(match.totalScores).reduce((sum, score) => sum + score, 0)}
                 </Text>
               </View>
+              {caHeoEnabled && (
+                <View style={[styles.cell, styles.totalCell, { backgroundColor: theme.primary + '10' }]}>
+                  <Text style={[styles.cellText, styles.totalText, { color: theme.success }]}>
+                    {match.rounds.reduce((sum, round) => sum + getCaHeoPotForRound(round), 0)}
+                  </Text>
+                </View>
+              )}
               {match.playerIds.map((playerId, index) => {
                 const total = match.totalScores[playerId] || 0;
                 return (

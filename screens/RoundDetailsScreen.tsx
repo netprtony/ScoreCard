@@ -7,6 +7,7 @@ import { Match, Round, Player } from '../types/models';
 import { formatActionDescription, formatToiTrangAction } from '../utils/actionFormatter';
 import { showSuccess, showWarning } from '../utils/toast';
 import { getPlayerById } from '../services/playerService';
+import i18n from '../utils/i18n';
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -133,7 +134,7 @@ export const RoundDetailsScreen: React.FC = () => {
     });
 
     if (hasError) {
-      showWarning('Lỗi', 'Vui lòng nhập số hợp lệ');
+      showWarning(i18n.t('error'), 'Vui lòng nhập số hợp lệ');
       return;
     }
 
@@ -142,12 +143,12 @@ export const RoundDetailsScreen: React.FC = () => {
     
     if (sum !== 0) {
       Alert.alert(
-        'Cảnh báo',
-        `Tổng điểm không bằng 0 (hiện tại: ${sum}). Bạn có chắc muốn lưu?`,
+        i18n.t('warning'),
+        `${i18n.t('scoreSumNotZero')} (${i18n.t('roundTotal')}: ${sum}). ${i18n.t('stillWantToSave')}`,
         [
-          { text: 'Hủy', style: 'cancel' },
+          { text: i18n.t('cancel'), style: 'cancel' },
           {
-            text: 'Lưu',
+            text: i18n.t('save'),
             onPress: () => {
               onUpdateRound(round.id, scores);
               navigation.goBack();
@@ -163,12 +164,12 @@ export const RoundDetailsScreen: React.FC = () => {
 
   const handleDelete = () => {
     Alert.alert(
-      'Xác nhận xóa',
-      'Bạn có chắc muốn xóa ván này?',
+      i18n.t('deleteRound'),
+      i18n.t('confirmDeleteRound'),
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: i18n.t('cancel'), style: 'cancel' },
         {
-          text: 'Xóa',
+          text: i18n.t('delete'),
           style: 'destructive',
           onPress: () => {
             onDeleteRound(round.id);
@@ -187,7 +188,7 @@ export const RoundDetailsScreen: React.FC = () => {
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Ván {round.roundNumber}
+          {i18n.t('round')} {round.roundNumber}
         </Text>
         <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
           <Ionicons name="trash" size={24} color={theme.error} />
@@ -196,10 +197,10 @@ export const RoundDetailsScreen: React.FC = () => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Actions Section */}
-        {(round.toiTrangWinner || round.actions.length > 0) && (
+        {(round.toiTrangWinner || (Array.isArray(round.actions) && round.actions.length > 0)) && (
           <View style={[styles.section, { backgroundColor: theme.card }]}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              📊 Hành Động
+              📊 {i18n.t('actions')}
             </Text>
             
             <ScrollView style={styles.actionsList} nestedScrollEnabled showsVerticalScrollIndicator={true}>
@@ -225,7 +226,7 @@ export const RoundDetailsScreen: React.FC = () => {
                           {formatted.text}
                         </Text>
                         <Text style={[styles.tapHint, { color: theme.textSecondary }]}>
-                          Nhấn để xem chi tiết
+                          {i18n.t('tapToViewDetails')}
                         </Text>
                       </View>
                       <Ionicons 
@@ -251,7 +252,7 @@ export const RoundDetailsScreen: React.FC = () => {
               })()}
               
               {/* Other Actions */}
-              {round.actions.map((action, idx) => {
+              {Array.isArray(round.actions) && round.actions.map((action, idx) => {
                 const actorIndex = match.playerIds.indexOf(action.actorId);
                 const actorName = match.playerNames[actorIndex];
                 const targetIndex = action.targetId ? match.playerIds.indexOf(action.targetId) : -1;
@@ -288,7 +289,7 @@ export const RoundDetailsScreen: React.FC = () => {
                           </Text>
                         )}
                         <Text style={[styles.tapHint, { color: theme.textSecondary }]}>
-                          Nhấn để xem chi tiết
+                          {i18n.t('tapToViewDetails')}
                         </Text>
                       </View>
                       <Ionicons 
@@ -319,17 +320,17 @@ export const RoundDetailsScreen: React.FC = () => {
         {/* Rank Results Section */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            🏆 Kết Quả
+            🏆 {i18n.t('matchResults')}
           </Text>
           
           {(() => {
             // Helper to get rank label
             const getRankLabel = (rank: number) => {
               switch(rank) {
-                case 1: return 'Nhất';
-                case 2: return 'Nhì';
-                case 3: return 'Ba';
-                case 4: return 'Bét';
+                case 1: return i18n.t('first');
+                case 2: return i18n.t('second');
+                case 3: return i18n.t('third');
+                case 4: return i18n.t('fourth');
                 default: return '';
               }
             };
@@ -390,7 +391,7 @@ export const RoundDetailsScreen: React.FC = () => {
         {/* Scores Section */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            📝 Điểm Số
+            📝 {i18n.t('totalScoreChange')}
           </Text>
           
           {match.playerIds.map((playerId, index) => {
@@ -417,7 +418,7 @@ export const RoundDetailsScreen: React.FC = () => {
           onPress={handleSave}
         >
           <Ionicons name="checkmark" size={24} color="#FFF" />
-          <Text style={styles.saveButtonText}>Lưu Thay Đổi</Text>
+          <Text style={styles.saveButtonText}>{i18n.t('save')} {i18n.t('edit')}</Text>
         </TouchableOpacity>
       </View>
     </View>

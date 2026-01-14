@@ -27,6 +27,7 @@ import {
   deletePlayer,
   getPlayerCount,
 } from '../services/playerService';
+import { Fonts } from '../constants/fonts';
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
 
@@ -650,7 +651,7 @@ const styles = StyleSheet.create({
   colorHexText: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'monospace',
+    fontFamily: Fonts.medium,
   },
   sliderContainer: {
     marginBottom: 10,
