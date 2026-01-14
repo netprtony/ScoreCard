@@ -326,7 +326,7 @@ export const ActiveMatchScreen: React.FC = () => {
                   <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('baseRatio')}</Text>
                   
                   <View style={styles.inputRow}>
-                    <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('base1')}</Text>
+                    <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('ratio1')}</Text>
                     <TextInput
                       style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                       value={editedConfig.baseRatioFirst.toString()}
@@ -336,7 +336,7 @@ export const ActiveMatchScreen: React.FC = () => {
                   </View>
 
                   <View style={styles.inputRow}>
-                    <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('base2')}</Text>
+                    <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('ratio2')}</Text>
                     <TextInput
                       style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                       value={editedConfig.baseRatioSecond.toString()}

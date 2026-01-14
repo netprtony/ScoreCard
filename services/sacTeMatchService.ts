@@ -139,6 +139,34 @@ export const addSacTeRound = (
 };
 
 /**
+ * Update Sắc Tê match configuration
+ */
+export const updateSacTeConfig = (matchId: string, newConfig: SacTeConfig): void => {
+    const matchRows = executeQuery<any>('SELECT * FROM matches WHERE id = ?', [matchId]);
+    if (matchRows.length === 0) {
+        throw new Error('Match not found');
+    }
+
+    const match = matchRows[0];
+    const currentConfig = JSON.parse(match.config_snapshot);
+
+    // Preserve pot tracking data
+    const updatedConfig = {
+        ...newConfig,
+        _caHeoCurrentPot: currentConfig._caHeoCurrentPot || 0,
+        _caHeoRoundsAccumulated: currentConfig._caHeoRoundsAccumulated || 0,
+    };
+
+    executeUpdate(
+        'UPDATE matches SET config_snapshot = ? WHERE id = ?',
+        [JSON.stringify(updatedConfig), matchId]
+    );
+};
+
+
+
+
+/**
  * Get Sắc Tê match by ID with pot tracking
  */
 export const getSacTeMatchById = (matchId: string): SacTeMatch | null => {

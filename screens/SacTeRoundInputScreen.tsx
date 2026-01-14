@@ -8,16 +8,20 @@ import {
   SafeAreaView,
   Alert,
   Image,
+  Modal,
+  TextInput,
+  Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useMatch } from '../contexts/MatchContext';
-import { Player, SacTeRoundOutcome, SacTeMatch } from '../types/models';
+import { Player, SacTeRoundOutcome, SacTeMatch, SacTeConfig } from '../types/models';
 import { getPlayerById } from '../services/playerService';
 import { calculateSacTeRoundScores } from '../utils/sacTeScoringEngine';
 import { showSuccess, showWarning } from '../utils/toast';
+import { updateSacTeConfig } from '../services/sacTeMatchService';
 
 export const SacTeRoundInputScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -39,6 +43,11 @@ export const SacTeRoundInputScreen: React.FC = () => {
 
   // Track if statuses have been initialized to prevent resets
   const statusesInitialized = React.useRef(false);
+
+  // Config editing state
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [editedConfig, setEditedConfig] = useState<SacTeConfig | null>(null);
+
 
   // Load players when activeMatch changes
   useEffect(() => {
@@ -293,6 +302,63 @@ export const SacTeRoundInputScreen: React.FC = () => {
     }
   };
 
+  const openConfigModal = () => {
+    setEditedConfig({ ...config });
+    setShowConfigModal(true);
+  };
+
+  const saveConfigChanges = async () => {
+    if (!editedConfig || !activeMatch) return;
+
+    // Validation
+    if (editedConfig.heSoGuc <= 0 || editedConfig.heSoTon <= 0 || editedConfig.whiteWinMultiplier <= 0) {
+      showWarning('Lỗi', 'Tất cả hệ số phải lớn hơn 0');
+      return;
+    }
+
+    if (editedConfig.caNuoc.enabled && editedConfig.caNuoc.heSo <= 0) {
+      showWarning('Lỗi', 'Hệ số Cá Nước phải lớn hơn 0');
+      return;
+    }
+
+    if (editedConfig.caHeo.enabled && editedConfig.caHeo.heSo <= 0) {
+      showWarning('Lỗi', 'Hệ số Cá Heo phải lớn hơn 0');
+      return;
+    }
+
+    try {
+      updateSacTeConfig(activeMatch.id, editedConfig);
+      await refreshMatch();
+      setShowConfigModal(false);
+      showSuccess('Thành công', 'Đã cập nhật cấu hình');
+    } catch (error) {
+      console.error('Error updating config:', error);
+      showWarning('Lỗi', 'Không thể cập nhật cấu hình');
+    }
+  };
+
+  const updateConfigField = (field: keyof SacTeConfig, value: any) => {
+    if (!editedConfig) return;
+    setEditedConfig({ ...editedConfig, [field]: value });
+  };
+
+  const updateCaNuocConfig = (field: 'enabled' | 'heSo', value: any) => {
+    if (!editedConfig) return;
+    setEditedConfig({
+      ...editedConfig,
+      caNuoc: { ...editedConfig.caNuoc, [field]: value },
+    });
+  };
+
+  const updateCaHeoConfig = (field: 'enabled' | 'heSo', value: any) => {
+    if (!editedConfig) return;
+    setEditedConfig({
+      ...editedConfig,
+      caHeo: { ...editedConfig.caHeo, [field]: value },
+    });
+  };
+
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
@@ -309,6 +375,9 @@ export const SacTeRoundInputScreen: React.FC = () => {
             </Text>
           )}
         </View>
+        <TouchableOpacity onPress={openConfigModal} style={{ marginLeft: 12 }}>
+          <Ionicons name="settings-outline" size={28} color={theme.text} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -461,6 +530,125 @@ export const SacTeRoundInputScreen: React.FC = () => {
       >
         <Text style={styles.saveButtonText}>Tính điểm và lưu</Text>
       </TouchableOpacity>
+
+      {/* Config Modal */}
+      <Modal
+        visible={showConfigModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowConfigModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Cấu hình luật chơi</Text>
+              <TouchableOpacity onPress={() => setShowConfigModal(false)}>
+                <Ionicons name="close" size={28} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              {editedConfig && (
+                <>
+                  {/* Hệ số Gục */}
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.text }]}>Hệ số Gục</Text>
+                    <TextInput
+                      style={[styles.configInput, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
+                      value={editedConfig.heSoGuc.toString()}
+                      onChangeText={(text) => updateConfigField('heSoGuc', parseInt(text) || 0)}
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  {/* Hệ số Tồn */}
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.text }]}>Hệ số Tồn</Text>
+                    <TextInput
+                      style={[styles.configInput, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
+                      value={editedConfig.heSoTon.toString()}
+                      onChangeText={(text) => updateConfigField('heSoTon', parseInt(text) || 0)}
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  {/* Hệ số Tới Trắng */}
+                  <View style={styles.configRow}>
+                    <Text style={[styles.configLabel, { color: theme.text }]}>Hệ số Tới Trắng</Text>
+                    <TextInput
+                      style={[styles.configInput, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
+                      value={editedConfig.whiteWinMultiplier.toString()}
+                      onChangeText={(text) => updateConfigField('whiteWinMultiplier', parseInt(text) || 0)}
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  {/* Cá Nước */}
+                  <View style={styles.configSection}>
+                    <View style={styles.configRowSwitch}>
+                      <Text style={[styles.configLabel, { color: theme.text }]}>Cá Nước</Text>
+                      <Switch
+                        value={editedConfig.caNuoc.enabled}
+                        onValueChange={(value) => updateCaNuocConfig('enabled', value)}
+                        trackColor={{ false: theme.border, true: theme.primary }}
+                      />
+                    </View>
+                    {editedConfig.caNuoc.enabled && (
+                      <View style={styles.configRow}>
+                        <Text style={[styles.configSubLabel, { color: theme.textSecondary }]}>Hệ số</Text>
+                        <TextInput
+                          style={[styles.configInput, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
+                          value={editedConfig.caNuoc.heSo.toString()}
+                          onChangeText={(text) => updateCaNuocConfig('heSo', parseInt(text) || 0)}
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Cá Heo */}
+                  <View style={styles.configSection}>
+                    <View style={styles.configRowSwitch}>
+                      <Text style={[styles.configLabel, { color: theme.text }]}>Cá Heo</Text>
+                      <Switch
+                        value={editedConfig.caHeo.enabled}
+                        onValueChange={(value) => updateCaHeoConfig('enabled', value)}
+                        trackColor={{ false: theme.border, true: theme.primary }}
+                      />
+                    </View>
+                    {editedConfig.caHeo.enabled && (
+                      <View style={styles.configRow}>
+                        <Text style={[styles.configSubLabel, { color: theme.textSecondary }]}>Hệ số</Text>
+                        <TextInput
+                          style={[styles.configInput, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
+                          value={editedConfig.caHeo.heSo.toString()}
+                          onChangeText={(text) => updateCaHeoConfig('heSo', parseInt(text) || 0)}
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    )}
+                  </View>
+                </>
+              )}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.surface }]}
+                onPress={() => setShowConfigModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: theme.text }]}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.primary }]}
+                onPress={saveConfigChanges}
+              >
+                <Text style={[styles.modalButtonText, { color: '#FFF' }]}>Lưu</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -602,5 +790,86 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 500,
+    borderRadius: 16,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  configRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  configRowSwitch: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  configLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  configSubLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  configInput: {
+    width: 80,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  configSection: {
+    marginBottom: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
 });
