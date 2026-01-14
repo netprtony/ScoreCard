@@ -1,0 +1,343 @@
+# ================================================================
+# Codemagic CI/CD Configuration for Koya Score (ScoreCard)
+# ================================================================
+# Project: Card game score tracking app (Tiến Lên, Sắc Tê)
+# Tech Stack: React Native (Expo), TypeScript, SQLite
+# Platform: Android & iOS
+# ================================================================
+
+workflows:
+  # ================================================================
+  # ANDROID BUILD WORKFLOW
+  # ================================================================
+  android-workflow:
+    name: Android Build & Release
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    
+    environment:
+      groups:
+        # Add these environment variable groups in Codemagic UI:
+        # - google_play (GCLOUD_SERVICE_ACCOUNT_CREDENTIALS)
+        # - expo (EXPO_TOKEN)
+      vars:
+        PACKAGE_NAME: "com.tienlen.scorecard"
+        NODE_VERSION: "20"
+      node: $NODE_VERSION
+      
+    triggering:
+      events:
+        - push
+        - tag
+        - pull_request
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+        - pattern: 'develop'
+          include: true
+          source: true
+      tag_patterns:
+        - pattern: 'v*'
+          include: true
+      cancel_previous_builds: true
+      
+    scripts:
+      - name: 📦 Install dependencies
+        script: |
+          echo "Installing Node.js dependencies..."
+          npm install
+          
+      - name: 🔍 Run TypeScript check
+        script: |
+          echo "Running TypeScript type checking..."
+          npx tsc --noEmit
+          
+      - name: 🏗️ Build Android APK/AAB
+        script: |
+          echo "Building Android app with Expo..."
+          # Install EAS CLI
+          npm install -g eas-cli
+          
+          # Login to Expo (requires EXPO_TOKEN in environment)
+          # eas login
+          
+          # Build Android APK for testing
+          npx expo export:android
+          
+          # For production AAB build (requires EAS):
+          # eas build --platform android --profile production --non-interactive
+          
+      - name: 📊 Generate build info
+        script: |
+          echo "Build completed at $(date)"
+          echo "Package: $PACKAGE_NAME"
+          echo "Version: $(node -p "require('./app.json').expo.version")"
+          
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
+      - build-*.tar.gz
+      
+    publishing:
+      email:
+        recipients:
+          - huynhvikhang6a13@gmail.com
+        notify:
+          success: true
+          failure: true
+          
+      # Uncomment to publish to Google Play
+      # google_play:
+      #   credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+      #   track: internal
+      #   submit_as_draft: true
+
+  # ================================================================
+  # iOS BUILD WORKFLOW
+  # ================================================================
+  ios-workflow:
+    name: iOS Build & Release
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    
+    environment:
+      groups:
+        # Add these environment variable groups in Codemagic UI:
+        # - app_store_connect (APP_STORE_CONNECT_KEY_IDENTIFIER, etc.)
+        # - expo (EXPO_TOKEN)
+        # - ios_certificate (CERTIFICATE_PRIVATE_KEY, etc.)
+      vars:
+        BUNDLE_ID: "com.tienlen.scorecard"
+        XCODE_WORKSPACE: "ios/KoyaScore.xcworkspace"
+        XCODE_SCHEME: "KoyaScore"
+        NODE_VERSION: "20"
+      node: $NODE_VERSION
+      xcode: latest
+      cocoapods: default
+      
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+      tag_patterns:
+        - pattern: 'v*'
+          include: true
+      cancel_previous_builds: true
+      
+    scripts:
+      - name: 📦 Install dependencies
+        script: |
+          echo "Installing Node.js dependencies..."
+          npm install
+          
+      - name: 🍎 Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+          
+      - name: 🔍 Run TypeScript check
+        script: |
+          echo "Running TypeScript type checking..."
+          npx tsc --noEmit
+          
+      - name: 🏗️ Build iOS IPA
+        script: |
+          echo "Building iOS app with Expo..."
+          # Install EAS CLI
+          npm install -g eas-cli
+          
+          # Build iOS IPA
+          npx expo export:ios
+          
+          # For production IPA build (requires EAS):
+          # eas build --platform ios --profile production --non-interactive
+          
+      - name: 📊 Generate build info
+        script: |
+          echo "Build completed at $(date)"
+          echo "Bundle ID: $BUNDLE_ID"
+          echo "Version: $(node -p "require('./app.json').expo.version")"
+          
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - build-*.tar.gz
+      
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+          
+      # Uncomment to publish to App Store
+      # app_store_connect:
+      #   auth: integration
+      #   submit_to_testflight: true
+      #   beta_groups:
+      #     - Beta Testers
+      #   submit_to_app_store: false
+
+  # ================================================================
+  # DEVELOPMENT BUILD (Debug APK for testing)
+  # ================================================================
+  dev-build:
+    name: Development Build (Debug)
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    
+    environment:
+      vars:
+        NODE_VERSION: "20"
+      node: $NODE_VERSION
+      
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'develop'
+          include: true
+          source: true
+        - pattern: 'feature/*'
+          include: true
+          source: true
+      cancel_previous_builds: true
+      
+    scripts:
+      - name: 📦 Install dependencies
+        script: |
+          npm install
+          
+      - name: 🔍 Type check
+        script: |
+          npx tsc --noEmit
+          
+      - name: 🏗️ Build debug APK
+        script: |
+          echo "Building debug APK..."
+          npx expo export:android
+          
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+      
+    publishing:
+      email:
+        recipients:
+          - dev-team@example.com
+        notify:
+          success: false
+          failure: true
+
+  # ================================================================
+  # QUALITY ASSURANCE WORKFLOW
+  # ================================================================
+  qa-workflow:
+    name: Quality Assurance & Tests
+    max_build_duration: 20
+    instance_type: mac_mini_m1
+    
+    environment:
+      vars:
+        NODE_VERSION: "20"
+      node: $NODE_VERSION
+      
+    triggering:
+      events:
+        - pull_request
+      cancel_previous_builds: true
+      
+    scripts:
+      - name: 📦 Install dependencies
+        script: |
+          npm install
+          
+      - name: 🔍 TypeScript type checking
+        script: |
+          echo "Running TypeScript compiler..."
+          npx tsc --noEmit
+          
+      - name: 📝 Code quality checks
+        script: |
+          echo "Checking code quality..."
+          # Add ESLint if configured:
+          # npm run lint
+          
+      - name: 🧪 Run tests (if available)
+        script: |
+          echo "Running tests..."
+          # Add when tests are implemented:
+          # npm test
+          
+      - name: 📊 Build verification
+        script: |
+          echo "Verifying build can complete..."
+          npx expo export:android --dev
+          
+    publishing:
+      email:
+        recipients:
+          - qa-team@example.com
+        notify:
+          success: false
+          failure: true
+
+# ================================================================
+# CONFIGURATION NOTES
+# ================================================================
+# 
+# 1. ENVIRONMENT VARIABLES TO SET IN CODEMAGIC UI:
+#    - EXPO_TOKEN: Your Expo authentication token
+#    - GCLOUD_SERVICE_ACCOUNT_CREDENTIALS: For Google Play publishing
+#    - APP_STORE_CONNECT credentials: For App Store publishing
+#
+# 2. REQUIRED SETUP:
+#    - Configure signing certificates in Codemagic
+#    - Set up EAS Build profile (eas.json)
+#    - Configure app store credentials
+#
+# 3. BUILD TRIGGERS:
+#    - Push to 'main' or 'develop': Full build
+#    - Push to 'feature/*': Dev build only
+#    - Tag 'v*': Release build
+#    - Pull request: QA checks only
+#
+# 4. CUSTOMIZATION:
+#    - Update email recipients
+#    - Adjust build timeouts
+#    - Configure publishing settings
+#    - Add custom scripts as needed
+#
+# 5. EXPO/EAS INTEGRATION:
+#    - This config uses Expo CLI for builds
+#    - For production, consider using EAS Build
+#    - Uncomment EAS build commands when ready
+#
+# ================================================================
+# PROJECT SPECIFIC NOTES
+# ================================================================
+# 
+# App Name: Koya Score
+# Package: com.tienlen.scorecard
+# Version: 1.0.4
+# 
+# Features:
+# - Card game score tracking (Tiến Lên, Sắc Tê)
+# - SQLite database
+# - Multi-language support (i18n)
+# - Dark mode
+# - Audio/Video support
+# 
+# Dependencies:
+# - Expo SDK 54
+# - React Native 0.81.5
+# - TypeScript 5.9.2
+# - React Navigation 7
+# - expo-sqlite, expo-audio, expo-video
+#
+# ================================================================
