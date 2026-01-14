@@ -338,7 +338,8 @@ export const SacTeRoundInputScreen: React.FC = () => {
                 <TouchableOpacity
                   style={[
                     styles.checkbox,
-                    isWinner && { backgroundColor: theme.success },
+                    { borderColor: theme.border },
+                    isWinner && { backgroundColor: theme.success, borderColor: theme.success },
                   ]}
                   onPress={() => toggleWinner(playerId)}
                 >
@@ -380,11 +381,12 @@ export const SacTeRoundInputScreen: React.FC = () => {
                   <TouchableOpacity
                     style={[
                       styles.statusButton,
-                      status.isGuc && { backgroundColor: theme.error },
+                      { borderColor: theme.border },
+                      status.isGuc && { backgroundColor: theme.error, borderColor: theme.error },
                     ]}
                     onPress={() => toggleGuc(playerId)}
                   >
-                    <Text style={[styles.statusText, status.isGuc && { color: '#FFF' }]}>
+                    <Text style={[styles.statusText, { color: theme.text }, status.isGuc && { color: '#FFF' }]}>
                       {status.isGuc ? '☠️ Gục' : 'Gục'}
                     </Text>
                   </TouchableOpacity>
@@ -392,11 +394,12 @@ export const SacTeRoundInputScreen: React.FC = () => {
                   <TouchableOpacity
                     style={[
                       styles.statusButton,
-                      status.hasTon && { backgroundColor: theme.warning },
+                      { borderColor: theme.border },
+                      status.hasTon && { backgroundColor: theme.warning, borderColor: theme.warning },
                     ]}
                     onPress={() => toggleTon(playerId)}
                   >
-                    <Text style={[styles.statusText, status.hasTon && { color: '#FFF' }]}>
+                    <Text style={[styles.statusText, { color: theme.text }, status.hasTon && { color: '#FFF' }]}>
                       {status.hasTon ? '⚠️ Tồn' : 'Tồn'}
                     </Text>
                   </TouchableOpacity>
@@ -409,13 +412,15 @@ export const SacTeRoundInputScreen: React.FC = () => {
                   <TouchableOpacity
                     style={[
                       styles.potButton,
-                      caNuocWinnerId === playerId && { backgroundColor: theme.primary },
+                      { borderColor: theme.border },
+                      caNuocWinnerId === playerId && { backgroundColor: theme.primary, borderColor: theme.primary },
                     ]}
                     onPress={() => toggleCaNuoc(playerId)}
                   >
                     <Text
                       style={[
                         styles.potText,
+                        { color: theme.text },
                         caNuocWinnerId === playerId && { color: '#FFF' },
                       ]}
                     >
@@ -428,13 +433,15 @@ export const SacTeRoundInputScreen: React.FC = () => {
                   <TouchableOpacity
                     style={[
                       styles.potButton,
-                      caHeoWinnerId === playerId && { backgroundColor: theme.success },
+                      { borderColor: theme.border },
+                      caHeoWinnerId === playerId && { backgroundColor: theme.success, borderColor: theme.success },
                     ]}
                     onPress={() => toggleCaHeo(playerId)}
                   >
                     <Text
                       style={[
                         styles.potText,
+                        { color: theme.text },
                         caHeoWinnerId === playerId && { color: '#FFF' },
                       ]}
                     >
@@ -522,7 +529,6 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#CCC',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -554,7 +560,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#CCC',
     alignItems: 'center',
   },
   statusText: {
@@ -570,7 +575,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#CCC',
     alignItems: 'center',
   },
   potText: {

@@ -313,6 +313,116 @@ export const RoundDetailsScreen: React.FC = () => {
                   </View>
                 );
               })}
+              
+              {/* Sắc Tê Actions: Cá Nước & Cá Heo */}
+              {!Array.isArray(round.actions) && round.actions && typeof round.actions === 'object' && (() => {
+                const actions = round.actions as any;
+                const outcome = actions.outcome;
+                
+                if (!outcome) return null;
+                
+                const sacTeActions = [];
+                
+                // Cá Nước Action
+                if (outcome.caNuocWinnerId) {
+                  const winnerIndex = match.playerIds.indexOf(outcome.caNuocWinnerId);
+                  const winnerName = match.playerNames[winnerIndex];
+                  const numberOfPlayers = match.playerIds.length;
+                  const config = match.configSnapshot as any;
+                  const caNuocBonus = (numberOfPlayers - 1) * (config.caNuoc?.heSo || 5);
+                  
+                  sacTeActions.push(
+                    <View key="ca-nuoc">
+                      <TouchableOpacity 
+                        style={[styles.actionItem, { borderLeftColor: theme.primary, backgroundColor: theme.surface }]}
+                        onPress={() => toggleActionExpand('ca-nuoc')}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.actionIcon}>💰</Text>
+                        <View style={styles.actionContent}>
+                          <Text style={[styles.actionText, { color: theme.text }]}>
+                            {winnerName} ăn Cá Nước
+                          </Text>
+                          <Text style={[styles.actionDetails, { color: theme.textSecondary }]}>
+                            +{caNuocBonus} điểm
+                          </Text>
+                          <Text style={[styles.tapHint, { color: theme.textSecondary }]}>
+                            {i18n.t('tapToViewDetails')}
+                          </Text>
+                        </View>
+                        <Ionicons 
+                          name={expandedActionId === 'ca-nuoc' ? 'chevron-up' : 'chevron-down'} 
+                          size={20} 
+                          color={theme.textSecondary} 
+                        />
+                      </TouchableOpacity>
+                      {expandedActionId === 'ca-nuoc' && (
+                        <View style={[styles.breakdownContainer, { backgroundColor: theme.background }]}>
+                          {match.playerIds.map((playerId, idx) => {
+                            const playerName = match.playerNames[idx];
+                            const score = playerId === outcome.caNuocWinnerId 
+                              ? caNuocBonus 
+                              : -(config.caNuoc?.heSo || 5);
+                            return (
+                              <View key={playerId} style={styles.breakdownRow}>
+                                <Text style={[styles.breakdownName, { color: theme.text }]}>{playerName}</Text>
+                                <Text style={[styles.breakdownScore, { color: score >= 0 ? '#4CAF50' : '#F44336' }]}>
+                                  {score >= 0 ? `+${score}` : score}
+                                </Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </View>
+                  );
+                }
+                
+                // Cá Heo Action
+                if (outcome.caHeoWinnerId) {
+                  const winnerIndex = match.playerIds.indexOf(outcome.caHeoWinnerId);
+                  const winnerName = match.playerNames[winnerIndex];
+                  const config = match.configSnapshot as any;
+                  const caHeoPot = actions.caHeoPot || 0;
+                  
+                  sacTeActions.push(
+                    <View key="ca-heo">
+                      <TouchableOpacity 
+                        style={[styles.actionItem, { borderLeftColor: theme.success, backgroundColor: theme.surface }]}
+                        onPress={() => toggleActionExpand('ca-heo')}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.actionIcon}>🐷</Text>
+                        <View style={styles.actionContent}>
+                          <Text style={[styles.actionText, { color: theme.text }]}>
+                            {winnerName} ăn Cá Heo
+                          </Text>
+                          <Text style={[styles.actionDetails, { color: theme.textSecondary }]}>
+                            Pot: {caHeoPot} điểm
+                          </Text>
+                          <Text style={[styles.tapHint, { color: theme.textSecondary }]}>
+                            {i18n.t('tapToViewDetails')}
+                          </Text>
+                        </View>
+                        <Ionicons 
+                          name={expandedActionId === 'ca-heo' ? 'chevron-up' : 'chevron-down'} 
+                          size={20} 
+                          color={theme.textSecondary} 
+                        />
+                      </TouchableOpacity>
+                      {expandedActionId === 'ca-heo' && (
+                        <View style={[styles.breakdownContainer, { backgroundColor: theme.background }]}>
+                          <Text style={[styles.breakdownName, { color: theme.textSecondary, marginBottom: 8 }]}>
+                            Pot đã reset về 0 sau ván này
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  );
+                }
+                
+                return sacTeActions;
+              })()}
             </ScrollView>
           </View>
         )}

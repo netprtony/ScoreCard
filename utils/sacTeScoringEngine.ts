@@ -95,26 +95,29 @@ export const calculateSacTeRoundScores = (
         // Cá Heo (Optional)
         if (config.caHeo.enabled && outcome.caHeoWinnerId) {
             const caHeoWinner = outcome.caHeoWinnerId;
-            const currentContribution = numberOfPlayers * config.caHeo.heSo;
-            const totalPot = caHeoAccumulated + currentContribution;
-            const winnerBonus = totalPot - (config.caHeo.heSo * caHeoRoundsAccumulated);
+            // Formula: Winner = heSo × (caHeoRoundsAccumulated + 1) × (numberOfPlayers - 1)
+            //          Each loser = -heSo × (caHeoRoundsAccumulated + 1)
+            const rounds = caHeoRoundsAccumulated + 1; // Include current round
+            const winnerBonus = config.caHeo.heSo * rounds * (numberOfPlayers - 1);
 
             scores[caHeoWinner] += winnerBonus;
             transactions.push({
                 playerId: caHeoWinner,
                 type: 'CÁ_HEO_WIN',
                 amount: winnerBonus,
-                description: `Cá Heo (${caHeoRoundsAccumulated} ván): +${winnerBonus}`,
+                description: `Cá Heo (${rounds} ván): +${winnerBonus}`,
             });
 
+            // Each loser pays: heSo × rounds
+            const loserCost = config.caHeo.heSo * rounds;
             playerIds.forEach(id => {
                 if (id !== caHeoWinner) {
-                    scores[id] -= config.caHeo.heSo;
+                    scores[id] -= loserCost;
                     transactions.push({
                         playerId: id,
                         type: 'CÁ_HEO_COST',
-                        amount: -config.caHeo.heSo,
-                        description: `Cá Heo: -${config.caHeo.heSo}`,
+                        amount: -loserCost,
+                        description: `Cá Heo (${rounds} ván): -${loserCost}`,
                     });
                 }
             });
@@ -187,26 +190,29 @@ export const calculateSacTeRoundScores = (
         // Cá Heo (if dealer marks winner)
         if (config.caHeo.enabled && outcome.caHeoWinnerId) {
             const caHeoWinner = outcome.caHeoWinnerId;
-            const currentContribution = numberOfPlayers * config.caHeo.heSo;
-            const totalPot = caHeoAccumulated + currentContribution;
-            const winnerBonus = totalPot - (config.caHeo.heSo * caHeoRoundsAccumulated);
+            // Formula: Winner = heSo × (caHeoRoundsAccumulated + 1) × (numberOfPlayers - 1)
+            //          Each loser = -heSo × (caHeoRoundsAccumulated + 1)
+            const rounds = caHeoRoundsAccumulated + 1; // Include current round
+            const winnerBonus = config.caHeo.heSo * rounds * (numberOfPlayers - 1);
 
             scores[caHeoWinner] += winnerBonus;
             transactions.push({
                 playerId: caHeoWinner,
                 type: 'CÁ_HEO_WIN',
                 amount: winnerBonus,
-                description: `Cá Heo (${caHeoRoundsAccumulated} ván): +${winnerBonus}`,
+                description: `Cá Heo (${rounds} ván): +${winnerBonus}`,
             });
 
+            // Each loser pays: heSo × rounds
+            const loserCost = config.caHeo.heSo * rounds;
             playerIds.forEach(id => {
                 if (id !== caHeoWinner) {
-                    scores[id] -= config.caHeo.heSo;
+                    scores[id] -= loserCost;
                     transactions.push({
                         playerId: id,
                         type: 'CÁ_HEO_COST',
-                        amount: -config.caHeo.heSo,
-                        description: `Cá Heo: -${config.caHeo.heSo}`,
+                        amount: -loserCost,
+                        description: `Cá Heo (${rounds} ván): -${loserCost}`,
                     });
                 }
             });
