@@ -56,17 +56,17 @@ workflows:
       - name: 🏗️ Build Android APK/AAB
         script: |
           echo "Building Android app with Expo..."
-          # Install EAS CLI
+          
+          # Install EAS CLI globally
           npm install -g eas-cli
           
-          # Login to Expo (requires EXPO_TOKEN in environment)
-          # eas login
+          # Build Android APK using EAS Build
+          # Note: This requires EAS account and EXPO_TOKEN environment variable
+          eas build --platform android --profile preview --non-interactive
           
-          # Build Android APK for testing
-          npx expo export:android
-          
-          # For production AAB build (requires EAS):
-          # eas build --platform android --profile production --non-interactive
+          # Alternative: Build locally (requires Android SDK)
+          # npx expo prebuild --platform android
+          # cd android && ./gradlew assembleRelease
           
       - name: 📊 Generate build info
         script: |
@@ -148,14 +148,17 @@ workflows:
       - name: 🏗️ Build iOS IPA
         script: |
           echo "Building iOS app with Expo..."
-          # Install EAS CLI
+          
+          # Install EAS CLI globally
           npm install -g eas-cli
           
-          # Build iOS IPA
-          npx expo export:ios
+          # Build iOS IPA using EAS Build
+          # Note: This requires EAS account and EXPO_TOKEN environment variable
+          eas build --platform ios --profile preview --non-interactive
           
-          # For production IPA build (requires EAS):
-          # eas build --platform ios --profile production --non-interactive
+          # Alternative: Build locally (requires Xcode)
+          # npx expo prebuild --platform ios
+          # cd ios && xcodebuild -workspace KoyaScore.xcworkspace -scheme KoyaScore archive
           
       - name: 📊 Generate build info
         script: |
@@ -221,7 +224,12 @@ workflows:
       - name: 🏗️ Build debug APK
         script: |
           echo "Building debug APK..."
-          npx expo export:android
+          
+          # Install EAS CLI
+          npm install -g eas-cli
+          
+          # Build development APK
+          eas build --platform android --profile development --non-interactive
           
     artifacts:
       - android/app/build/outputs/**/*.apk
@@ -277,7 +285,8 @@ workflows:
       - name: 📊 Build verification
         script: |
           echo "Verifying build can complete..."
-          npx expo export:android --dev
+          # Just verify that expo can prebuild without errors
+          npx expo prebuild --no-install
           
     publishing:
       email:
@@ -292,14 +301,38 @@ workflows:
 # ================================================================
 # 
 # 1. ENVIRONMENT VARIABLES TO SET IN CODEMAGIC UI:
-#    - EXPO_TOKEN: Your Expo authentication token
-#    - GCLOUD_SERVICE_ACCOUNT_CREDENTIALS: For Google Play publishing
-#    - APP_STORE_CONNECT credentials: For App Store publishing
+#    
+#    A. EXPO_TOKEN (REQUIRED for builds):
+#       - Go to https://expo.dev/accounts/[your-account]/settings/access-tokens
+#       - Create a new token with "Read and write" permissions
+#       - In Codemagic UI: Environment variables > Add variable
+#       - Name: EXPO_TOKEN
+#       - Value: [paste your token]
+#       - Make it a secret variable
+#    
+#    B. For Google Play publishing (optional):
+#       - GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+#    
+#    C. For App Store publishing (optional):
+#       - APP_STORE_CONNECT_KEY_IDENTIFIER
+#       - APP_STORE_CONNECT_ISSUER_ID
+#       - APP_STORE_CONNECT_PRIVATE_KEY
 #
 # 2. REQUIRED SETUP:
-#    - Configure signing certificates in Codemagic
-#    - Set up EAS Build profile (eas.json)
-#    - Configure app store credentials
+#    
+#    A. EAS Account Setup:
+#       - Sign up at https://expo.dev
+#       - Link your project: `eas init --id af01253e-afef-4bb5-9ff4-9a407733cf46`
+#       - Configure eas.json (already exists in project)
+#    
+#    B. Signing Certificates:
+#       - Android: EAS will auto-generate or you can upload your keystore
+#       - iOS: Configure in Apple Developer account
+#    
+#    C. First Time Setup:
+#       - Run locally first: `eas build --platform android --profile preview`
+#       - This will set up credentials
+#       - Then Codemagic can use the same credentials
 #
 # 3. BUILD TRIGGERS:
 #    - Push to 'main' or 'develop': Full build
@@ -314,10 +347,30 @@ workflows:
 #    - Add custom scripts as needed
 #
 # 5. EXPO/EAS INTEGRATION:
-#    - This config uses Expo CLI for builds
-#    - For production, consider using EAS Build
-#    - Uncomment EAS build commands when ready
+#    - This config uses EAS Build (cloud builds)
+#    - Builds are done on Expo's servers
+#    - Requires EXPO_TOKEN environment variable
+#    - Build profiles defined in eas.json:
+#      * development: Dev client APK
+#      * preview: Internal testing APK
+#      * production: App Bundle (AAB) for stores
 #
+# 6. TROUBLESHOOTING:
+#    
+#    Error: "Invalid project root"
+#    - Fixed! Now using correct EAS build commands
+#    
+#    Error: "EXPO_TOKEN not found"
+#    - Add EXPO_TOKEN in Codemagic environment variables
+#    
+#    Error: "No credentials configured"
+#    - Run `eas build` locally first to set up credentials
+#    
+#    Build takes too long:
+#    - EAS builds typically take 10-20 minutes
+#    - Adjust max_build_duration if needed
+#
+
 # ================================================================
 # PROJECT SPECIFIC NOTES
 # ================================================================
