@@ -16,13 +16,10 @@ workflows:
     instance_type: mac_mini_m1
     
     environment:
-      # groups:
-        # Add these environment variable groups in Codemagic UI when needed:
-        # - google_play (GCLOUD_SERVICE_ACCOUNT_CREDENTIALS)
-        # - expo (EXPO_TOKEN)
       vars:
         PACKAGE_NAME: "com.tienlen.scorecard"
         NODE_VERSION: "20"
+        # EXPO_TOKEN will be automatically available from Codemagic environment variables
       node: $NODE_VERSION
       
     triggering:
@@ -120,16 +117,12 @@ workflows:
     instance_type: mac_mini_m1
     
     environment:
-      # groups:
-        # Add these environment variable groups in Codemagic UI when needed:
-        # - app_store_connect (APP_STORE_CONNECT_KEY_IDENTIFIER, etc.)
-        # - expo (EXPO_TOKEN)
-        # - ios_certificate (CERTIFICATE_PRIVATE_KEY, etc.)
       vars:
         BUNDLE_ID: "com.tienlen.scorecard"
         XCODE_WORKSPACE: "ios/KoyaScore.xcworkspace"
         XCODE_SCHEME: "KoyaScore"
         NODE_VERSION: "20"
+        # EXPO_TOKEN will be automatically available from Codemagic environment variables
       node: $NODE_VERSION
       xcode: latest
       cocoapods: default

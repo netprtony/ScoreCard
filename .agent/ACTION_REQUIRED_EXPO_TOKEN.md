@@ -1,177 +1,241 @@
-# 🚨 ACTION REQUIRED: Setup EXPO_TOKEN
+# 🚨 URGENT: Fix EXPO_TOKEN Access Issue
 
-## Current Status: ❌ Build Failed
+## Current Status: ❌ EXPO_TOKEN Added but Not Accessible
 
-**Error Message:**
-```
-An Expo user account is required to proceed.
-Either log in with eas login or set the EXPO_TOKEN environment variable
-```
-
-**Root Cause:** Missing `EXPO_TOKEN` in Codemagic environment variables
+### Problem:
+- ✅ EXPO_TOKEN đã được add vào Codemagic
+- ❌ Nhưng workflow không thể access được
+- ❌ Build vẫn fail với error: "EXPO_TOKEN is not set"
 
 ---
 
-## ✅ Quick Fix (5 minutes)
+## 🎯 Quick Fix (Choose ONE solution)
 
-### Step 1: Create EXPO_TOKEN (2 min)
+### ✅ Solution 1: Make EXPO_TOKEN Global (FASTEST - 1 minute)
 
-1. **Go to Expo:**
-   - URL: https://expo.dev/accounts/[your-username]/settings/access-tokens
-   - Login if needed
+**In Codemagic UI:**
 
-2. **Create Token:**
-   - Click **"Create Token"**
-   - Name: `Codemagic CI/CD`
-   - Permissions: **Read and write** ✅
-   - Click **"Create"**
+1. **Go to Settings:**
+   - https://codemagic.io/apps
+   - Select: ScoreCard
+   - Click: Settings ⚙️
 
-3. **Copy Token:**
-   - ⚠️ **COPY NOW!** (only shown once)
-   - Save to clipboard
+2. **Edit EXPO_TOKEN:**
+   - Tab: "Environment variables"
+   - Find: `EXPO_TOKEN` (with 🔒)
+   - Click: "Edit" or the pencil icon
 
-### Step 2: Add to Codemagic (2 min)
-
-1. **Open Codemagic:**
-   - URL: https://codemagic.io/apps
-   - Select: **ScoreCard** project
-
-2. **Add Variable:**
-   - Click **Settings** (⚙️)
-   - Tab: **Environment variables**
-   - Click **"Add variable"**
-
-3. **Configure:**
-   ```
-   Name:    EXPO_TOKEN
-   Value:   [paste token here]
-   Secure:  ✅ CHECK THIS!
-   ```
+3. **Make it Global:**
+   - Look for: "Available for workflows" or "Scope"
+   - Select: **"All workflows"** or **"Global"**
+   - OR check: ✅ **"Available for all workflows"**
 
 4. **Save:**
-   - Click **"Add"**
-   - Should see 🔒 icon next to EXPO_TOKEN
+   - Click "Save" or "Update"
+   - Should see confirmation
 
-### Step 3: Trigger New Build (1 min)
+5. **Trigger Build:**
+   ```bash
+   # Push current changes
+   git add .
+   git commit -m "Fix EXPO_TOKEN access in workflows"
+   git push origin master
+   ```
 
+---
+
+### ✅ Solution 2: Assign to Specific Workflows (2 minutes)
+
+**In Codemagic UI:**
+
+1. **Edit EXPO_TOKEN:**
+   - Settings → Environment variables
+   - Edit `EXPO_TOKEN`
+
+2. **Select Workflows:**
+   - Check these workflows:
+     - ✅ `android-workflow`
+     - ✅ `ios-workflow`
+     - ✅ `dev-build`
+     - ✅ `qa-workflow`
+
+3. **Save and Build:**
+   - Save changes
+   - Start new build
+
+---
+
+### ✅ Solution 3: Use Environment Group (3 minutes)
+
+**Step 1: Create Group in Codemagic**
+1. Settings → "Environment variable groups"
+2. Click "Add group"
+3. Name: `expo`
+4. Add variable:
+   - Name: `EXPO_TOKEN`
+   - Value: [your token]
+   - Secure: ✅
+
+**Step 2: Update codemagic.yaml**
+```yaml
+environment:
+  groups:
+    - expo  # Add this line
+  vars:
+    PACKAGE_NAME: "com.tienlen.scorecard"
+    NODE_VERSION: "20"
+```
+
+**Step 3: Commit and Push**
 ```bash
-# Option A: Empty commit
-git commit --allow-empty -m "Add EXPO_TOKEN to CI"
-git push origin master
-
-# Option B: Update this file
-git add .
-git commit -m "Setup EXPO_TOKEN for Codemagic"
+git add codemagic.yaml
+git commit -m "Use expo group for EXPO_TOKEN"
 git push origin master
 ```
 
 ---
 
-## 📊 What Happens Next
+## 📋 What I Already Fixed
 
-### After Adding EXPO_TOKEN:
+✅ **Updated codemagic.yaml:**
+- Removed commented `groups:` section
+- Cleaned up environment configuration
+- Added helpful comments
 
-1. **Build starts:** ✅
+✅ **Created Documentation:**
+- `.agent/TROUBLESHOOT_EXPO_TOKEN.md` - Full troubleshooting guide
+- This file - Quick action guide
+
+---
+
+## 🔍 How to Verify It's Working
+
+### Check in Codemagic UI:
+
+1. **Before starting build:**
+   - Go to: Settings → Environment variables
+   - Find: `EXPO_TOKEN`
+   - Should show: "Available for: All workflows" or specific workflows
+
+2. **During build:**
+   - Watch build logs
+   - Should see:
+     ```
+     Step 4: 🔑 Verify EXPO_TOKEN
+     ✅ EXPO_TOKEN is set
+     ```
+
+3. **If still failing:**
+   - Check build logs for "Environment variables" section
+   - EXPO_TOKEN should be listed (value hidden as ••••)
+
+---
+
+## 🎯 Recommended Action
+
+**I recommend Solution 1 (Make it Global)** because:
+- ✅ Fastest (1 minute)
+- ✅ Works for all workflows
+- ✅ No code changes needed
+- ✅ Easy to verify
+
+### Steps:
+1. Open Codemagic UI
+2. Edit EXPO_TOKEN
+3. Make it "Global" or "Available for all workflows"
+4. Save
+5. Push this commit:
+   ```bash
+   git add .
+   git commit -m "Update codemagic.yaml and add troubleshooting docs"
+   git push origin master
+   ```
+
+---
+
+## 📊 Expected Timeline
+
+| Step | Time | Action |
+|------|------|--------|
+| 1. Make EXPO_TOKEN global | 1 min | In Codemagic UI |
+| 2. Commit changes | 1 min | Git push |
+| 3. Wait for build | 2-3 min | Auto-triggered |
+| 4. Verify success | 1 min | Check logs |
+| **Total** | **5-6 min** | **To working build** |
+
+---
+
+## ✅ Success Indicators
+
+### You'll know it's fixed when:
+
+1. **Build logs show:**
    ```
    🔑 Verify EXPO_TOKEN
    ✅ EXPO_TOKEN is set
    
    🏗️ Build Android APK/AAB
-   Building Android app with Expo...
-   ✔ Logged in
-   › Compressing project files...
+   ✔ Logged in as [your-username]
    ```
 
-2. **Build completes:** ✅ (10-20 minutes)
-   ```
-   ✔ Build finished
-   📦 Artifacts ready for download
-   ```
+2. **No more errors about:**
+   - "EXPO_TOKEN is not set"
+   - "An Expo user account is required"
 
-3. **Email notification:** ✅
-   - To: huynhvikhang6a13@gmail.com
-   - Subject: "Build #X succeeded"
-   - Download link included
+3. **Build progresses to:**
+   - "Compressing project files..."
+   - "Uploading to EAS Build..."
 
 ---
 
-## 🔍 Verification Checklist
+## 🆘 If Still Not Working
 
-Before next build, verify:
+### Try this debug script:
 
-- [ ] ✅ EXPO_TOKEN created at expo.dev
-- [ ] ✅ Token copied (shown only once!)
-- [ ] ✅ Added to Codemagic environment variables
-- [ ] ✅ Variable name is exactly: `EXPO_TOKEN` (case-sensitive)
-- [ ] ✅ Marked as "Secure" with 🔒 icon
-- [ ] ✅ Changes saved in Codemagic
-- [ ] ✅ New commit pushed to trigger build
+Add to `codemagic.yaml` temporarily:
 
----
-
-## 📚 Detailed Guides
-
-- **Quick Setup:** `.agent/EXPO_TOKEN_SETUP.md`
-- **Full Guide:** `.agent/CODEMAGIC_SETUP_GUIDE.md`
-- **Config File:** `codemagic.yaml`
-
----
-
-## 🆘 Still Having Issues?
-
-### Error: "Token expired"
-- Create new token at expo.dev
-- Update in Codemagic
-
-### Error: "Invalid token"
-- Check for extra spaces when copying
-- Verify "Read and write" permissions
-- Regenerate if needed
-
-### Build still fails
-- Wait 1-2 minutes for Codemagic to sync
-- Trigger **new** build (don't re-run old one)
-- Check build logs for actual error
-
----
-
-## 📞 Support
-
-- **Email:** huynhvikhang6a13@gmail.com
-- **Expo Docs:** https://docs.expo.dev/accounts/programmatic-access/
-- **Codemagic Docs:** https://docs.codemagic.io/yaml-basic-configuration/configuring-environment-variables/
-
----
-
-## ⏱️ Timeline
-
-| Task | Time | Status |
-|------|------|--------|
-| Create EXPO_TOKEN | 2 min | ⏳ Pending |
-| Add to Codemagic | 2 min | ⏳ Pending |
-| Trigger build | 1 min | ⏳ Pending |
-| **Total setup** | **5 min** | ⏳ **Pending** |
-| Build completes | 10-20 min | ⏳ After setup |
-
----
-
-**Last Updated:** 2026-01-14 23:16  
-**Priority:** 🔴 HIGH - Required for CI/CD  
-**Impact:** Blocks all automated builds
-
----
-
-## ✅ Success Criteria
-
-Build will succeed when you see:
-
-```
-Step 3 script `🔑 Verify EXPO_TOKEN` exited with status code 0
-✅ EXPO_TOKEN is set
-
-Step 4 script `🏗️ Build Android APK/AAB` running...
-Building Android app with Expo...
-✔ Logged in
+```yaml
+scripts:
+  - name: 🐛 Debug EXPO_TOKEN
+    script: |
+      echo "Checking EXPO_TOKEN..."
+      if [ -z "$EXPO_TOKEN" ]; then
+        echo "❌ NOT SET"
+        echo "Available env vars:"
+        env | grep -i token || echo "No token vars"
+      else
+        echo "✅ SET (${#EXPO_TOKEN} chars)"
+      fi
 ```
 
-**Then you're good to go! 🎉**
+This will tell you exactly what's available in the build environment.
+
+---
+
+## 📞 Need Help?
+
+**Check these files:**
+- `.agent/TROUBLESHOOT_EXPO_TOKEN.md` - Detailed troubleshooting
+- `.agent/EXPO_TOKEN_SETUP.md` - Initial setup guide
+- `.agent/CODEMAGIC_SETUP_GUIDE.md` - Full CI/CD guide
+
+**Contact:**
+- Email: huynhvikhang6a13@gmail.com
+- Codemagic Support: support@codemagic.io
+
+---
+
+## 🎯 Next Action
+
+**RIGHT NOW:**
+1. Go to Codemagic UI
+2. Make EXPO_TOKEN global (Solution 1)
+3. Push this commit
+4. Watch build succeed! 🎉
+
+---
+
+**Updated:** 2026-01-14 23:45  
+**Priority:** 🔴 URGENT  
+**Blocking:** All CI/CD builds  
+**ETA to fix:** 5-6 minutes
