@@ -1,0 +1,73 @@
+name: Create Release v1.0.4
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🏗 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📝 Generate Release Notes
+        id: release_notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## 🎉 Koya Score v1.0.4
+
+          ### ✨ Features
+          - Card game score tracking application
+          - Support for multiple game types (Tiến Lên, Sắc Tê)
+          - Multilingual support (Vietnamese, English)
+          - Player management with custom colors
+          - Match history and statistics
+          - Dark mode UI with modern design
+
+          ### 📱 Platforms
+          - Android: AAB (App Bundle) for Google Play Store
+          - iOS: Archive for App Store
+
+          ### 🔧 Technical Details
+          - Built with React Native & Expo
+          - Version: 1.0.4
+          - Bundle ID (iOS): com.tienlen.scorecard
+          - Package Name (Android): com.tienlen.scorecard
+
+          ### 📦 Installation
+          Download the appropriate build from the assets below or from the EAS dashboard.
+
+          ### 🔗 Links
+          - [EAS Build Dashboard](https://expo.dev)
+          - [Documentation](https://github.com/${{ github.repository }})
+          EOF
+          
+          echo "Release notes generated successfully"
+
+      - name: 🏷️ Create Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a v1.0.4 -m "Release version 1.0.4"
+          git push origin v1.0.4
+
+      - name: 🚀 Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v1.0.4
+          release_name: Koya Score v1.0.4
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+
+      - name: 📢 Success Message
+        run: |
+          echo "✅ Release v1.0.4 created successfully!"
+          echo "🏷️ Tag: v1.0.4"
+          echo "🔗 View release at: https://github.com/${{ github.repository }}/releases/tag/v1.0.4"
