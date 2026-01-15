@@ -301,6 +301,7 @@ export const PlayerListScreen: React.FC = () => {
           style={styles.slider}
           minimumValue={0}
           maximumValue={360}
+          step={1}
           value={hue}
           onValueChange={setHue}
           minimumTrackTintColor={hslToHex(hue, 100, 50)}
@@ -318,6 +319,7 @@ export const PlayerListScreen: React.FC = () => {
           style={styles.slider}
           minimumValue={0}
           maximumValue={100}
+          step={1}
           value={saturation}
           onValueChange={setSaturation}
           minimumTrackTintColor={selectedColor}
@@ -335,6 +337,7 @@ export const PlayerListScreen: React.FC = () => {
           style={styles.slider}
           minimumValue={0}
           maximumValue={100}
+          step={1}
           value={lightness}
           onValueChange={setLightness}
           minimumTrackTintColor={selectedColor}
@@ -404,6 +407,8 @@ export const PlayerListScreen: React.FC = () => {
             <ScrollView 
               showsVerticalScrollIndicator={false}
               style={styles.modalScrollView}
+              nestedScrollEnabled={true}
+              scrollEnabled={true}
             >
               <TextInput
               style={[
@@ -472,6 +477,8 @@ export const PlayerListScreen: React.FC = () => {
             <ScrollView 
               showsVerticalScrollIndicator={false}
               style={styles.modalScrollView}
+              nestedScrollEnabled={true}
+              scrollEnabled={true}
             >
               <TextInput
               style={[

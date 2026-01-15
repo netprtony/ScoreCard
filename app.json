@@ -2,7 +2,7 @@
   "expo": {
     "name": "Koya Score",
     "slug": "KoyaScore",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/mainLogoApp.png",
     "userInterfaceStyle": "dark",
@@ -38,7 +38,8 @@
     "plugins": [
       "expo-audio",
       "expo-video",
-      "expo-font"
+      "expo-font",
+      "react-native-gesture-handler"
     ],
     "extra": {
       "eas": {
