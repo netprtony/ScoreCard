@@ -38,8 +38,7 @@
     "plugins": [
       "expo-audio",
       "expo-video",
-      "expo-font",
-      "react-native-gesture-handler"
+      "expo-font"
     ],
     "extra": {
       "eas": {

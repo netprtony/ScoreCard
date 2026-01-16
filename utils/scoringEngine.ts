@@ -136,18 +136,17 @@ export const calculateRoundScores = (
             const killCount = killedPlayerIds.size;
             const killer = gietActions[0].actorId; // Assume same killer for all
 
-            // Calculate total kill score
-            let totalKillScore = 0;
+            // Calculate kill score for each victim
+            let totalKillerGain = 0; // Total points killer will gain
             const victimScores: { [playerId: string]: number } = {};
 
             gietActions.forEach(action => {
                 if (!action.targetId) return;
 
-                // Base kill score per victim
-                const baseKillScore = config.baseRatioFirst * config.killMultiplier;
-                let killScore = baseKillScore;
+                // Base kill score per victim: kill_multiplier * base_ratio_first
+                let victimLoss = config.baseRatioFirst * config.killMultiplier;
 
-                // Add penalties for this victim
+                // Add penalties for this victim (if they have special cards)
                 if (config.enablePenalties && action.killedPenalties) {
                     action.killedPenalties.forEach(penalty => {
                         let points = 0;
@@ -158,61 +157,85 @@ export const calculateRoundScores = (
                             case 'ba_doi_thong': points = config.penaltyBaDoiThong; break;
                             case 'tu_quy': points = config.penaltyTuQuy; break;
                         }
-                        killScore += points * penalty.count;
+                        victimLoss += points * penalty.count;
                     });
                 }
 
-                totalKillScore += killScore;
-                victimScores[action.targetId] = (victimScores[action.targetId] || 0) - killScore;
+                // Store victim's loss (negative value)
+                victimScores[action.targetId] = (victimScores[action.targetId] || 0) - victimLoss;
+                // Accumulate total for killer
+                totalKillerGain += victimLoss;
             });
 
-            // Handle Case 2: Double kill (1v2)
-            if (killCount === 2) {
+            // Apply scores based on kill count
+            if (killCount === 3) {
+                // Case: 1 killer vs 3 victims (1v3)
+                // Killer gets all, victims lose their respective amounts
+                // No base scores apply in this case
+
+                const killerPlayer = breakdown.find(p => p.playerId === killer);
+                if (killerPlayer) {
+                    // Remove base score from killer
+                    scores[killer] -= killerPlayer.baseScore;
+                    killerPlayer.baseScore = 0;
+                }
+
+                // Remove base scores from all victims
+                killedPlayerIds.forEach(victimId => {
+                    const victimPlayer = breakdown.find(p => p.playerId === victimId);
+                    if (victimPlayer) {
+                        scores[victimId] -= victimPlayer.baseScore;
+                        victimPlayer.baseScore = 0;
+                    }
+                });
+
+                // Apply kill scores
+                scores[killer] += totalKillerGain;
+                if (killerPlayer) killerPlayer.gietScore += totalKillerGain;
+
+                // Victims lose their respective amounts
+                Object.entries(victimScores).forEach(([victimId, score]) => {
+                    scores[victimId] += score;
+                    const victimPlayer = breakdown.find(p => p.playerId === victimId);
+                    if (victimPlayer) victimPlayer.gietScore += score;
+                });
+
+            } else if (killCount === 2) {
+                // Case: 1 killer vs 2 victims (1v2)
                 // Find the neutral player (not killer, not victims)
                 const neutralPlayer = playerIds.find(id =>
                     id !== killer && !killedPlayerIds.has(id)
                 );
 
                 if (neutralPlayer) {
-                    // In double kill:
-                    // - Killer: Remove base score, only gets kill scores
-                    // - Victims: Remove base scores, only lose kill penalties
-                    // - Neutral: Set to 0
-
                     // Remove base score from killer
                     const killerPlayer = breakdown.find(p => p.playerId === killer);
                     if (killerPlayer) {
-                        const killerBaseScore = killerPlayer.baseScore;
-                        scores[killer] -= killerBaseScore;
+                        scores[killer] -= killerPlayer.baseScore;
                         killerPlayer.baseScore = 0;
                     }
 
-                    // Remove base scores from victims (they're rank 4 but killed)
+                    // Remove base scores from victims
                     killedPlayerIds.forEach(victimId => {
                         const victimPlayer = breakdown.find(p => p.playerId === victimId);
                         if (victimPlayer) {
-                            // Remove the base score that was applied earlier
-                            const victimBaseScore = victimPlayer.baseScore;
-                            scores[victimId] -= victimBaseScore;
+                            scores[victimId] -= victimPlayer.baseScore;
                             victimPlayer.baseScore = 0;
                         }
                     });
 
                     // Set neutral player to 0
-                    const neutralBaseScore = scores[neutralPlayer];
                     scores[neutralPlayer] = 0;
-
                     const neutralPlayerBreakdown = breakdown.find(p => p.playerId === neutralPlayer);
                     if (neutralPlayerBreakdown) {
                         neutralPlayerBreakdown.baseScore = 0;
-                        neutralPlayerBreakdown.totalScore = 0;
                     }
 
-                    // Now apply kill scores
-                    scores[killer] += totalKillScore;
-                    if (killerPlayer) killerPlayer.gietScore += totalKillScore;
+                    // Apply kill scores
+                    scores[killer] += totalKillerGain;
+                    if (killerPlayer) killerPlayer.gietScore += totalKillerGain;
 
-                    // Victims lose their respective kill amounts
+                    // Victims lose their respective amounts
                     Object.entries(victimScores).forEach(([victimId, score]) => {
                         scores[victimId] += score;
                         const victimPlayer = breakdown.find(p => p.playerId === victimId);
@@ -220,17 +243,33 @@ export const calculateRoundScores = (
                     });
                 }
             } else {
-                // Case 1: Single kill (1v1) - normal scoring
-                // Killer gains total
-                scores[killer] += totalKillScore;
-                const killerPlayer = breakdown.find(p => p.playerId === killer);
-                if (killerPlayer) killerPlayer.gietScore += totalKillScore;
+                // Case: 1 killer vs 1 victim (1v1)
+                // Killer: removes base score, only gains kill points
+                // Victim: removes base score, only loses kill points
+                // Other 2 players: keep their base scores
 
-                // Victims lose their respective amounts
+                const killerPlayer = breakdown.find(p => p.playerId === killer);
+
+                // Killer: remove base score and gain kill points
+                if (killerPlayer) {
+                    scores[killer] -= killerPlayer.baseScore;
+                    killerPlayer.baseScore = 0;
+                }
+                scores[killer] += totalKillerGain;
+                if (killerPlayer) killerPlayer.gietScore += totalKillerGain;
+
+                // Victim: remove base score and apply kill penalty
                 Object.entries(victimScores).forEach(([victimId, score]) => {
-                    scores[victimId] += score;
                     const victimPlayer = breakdown.find(p => p.playerId === victimId);
-                    if (victimPlayer) victimPlayer.gietScore += score;
+                    if (victimPlayer) {
+                        // Remove base score from victim
+                        scores[victimId] -= victimPlayer.baseScore;
+                        victimPlayer.baseScore = 0;
+
+                        // Apply kill penalty
+                        scores[victimId] += score;
+                        victimPlayer.gietScore += score;
+                    }
                 });
             }
         }
