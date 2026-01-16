@@ -20,6 +20,8 @@ import { CountdownTimer } from '../components/CountdownTimer';
 import { ScoringConfig } from '../types/models';
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
+import { Button } from '../components/rn-ui';
+import { WallpaperBackground } from '../components/WallpaperBackground';
 export const ActiveMatchScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
@@ -155,18 +157,20 @@ export const ActiveMatchScreen: React.FC = () => {
 
   if (!activeMatch) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <WallpaperBackground>
+        <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
           <Ionicons name="game-controller-outline" size={64} color={theme.textSecondary} />
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
             {i18n.t('no_match_found')}
           </Text>
-          <TouchableOpacity
-            style={[styles.startButton, { backgroundColor: theme.primary }]}
+          <Button
             onPress={() => navigation.navigate('GameSelection' as never)}
+            size="lg"
+            style={{ paddingHorizontal: 32 }}
           >
-            <Text style={styles.startButtonText}>{i18n.t('start_match_new')}</Text>
-          </TouchableOpacity>
+            {i18n.t('start_match_new')}
+          </Button>
           
           {/* Show paused matches */}
           {pausedMatches.length > 0 && (
@@ -194,12 +198,14 @@ export const ActiveMatchScreen: React.FC = () => {
             </View>
           )}
         </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </WallpaperBackground>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <WallpaperBackground>
+      <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
@@ -233,8 +239,8 @@ export const ActiveMatchScreen: React.FC = () => {
       </View>
 
       {/* Score Table */}
-      <View style={[styles.tableContainer, { backgroundColor: theme.card }]}>
-        <Text style={[styles.tableTitle, { color: theme.text }]}>{i18n.t('score_table')}</Text>
+      <View style={styles.tableContainer}>
+        <Text style={[styles.tableTitle, { color: theme.text, paddingHorizontal: 20 }]}>{i18n.t('score_table')}</Text>
         {activeMatch.rounds.length > 0 ? (
           <ScoreTable 
             match={activeMatch} 
@@ -283,21 +289,22 @@ export const ActiveMatchScreen: React.FC = () => {
 
       {/* Action Buttons */}
       <View style={[styles.buttonContainer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
-        <TouchableOpacity
-          style={[styles.button, styles.endButton, { backgroundColor: theme.error }]}
+        <Button
+          variant="destructive"
           onPress={handleEndMatch}
+          icon={<Ionicons name="stop-circle-outline" size={24} color="#FFF" />}
+          style={{ flex: 1 }}
         >
-          <Ionicons name="stop-circle-outline" size={24} color="#FFF" />
-          <Text style={styles.buttonText}>{i18n.t('end_match')}</Text>
-        </TouchableOpacity>
+          {i18n.t('end_match')}
+        </Button>
 
-        <TouchableOpacity
-          style={[styles.button, styles.addButton, { backgroundColor: theme.primary }]}
+        <Button
           onPress={handleAddRound}
+          icon={<Ionicons name="add-circle-outline" size={24} color="#62aa10ff" />}
+          style={{ flex: 1 }}
         >
-          <Ionicons name="add-circle-outline" size={24} color="#FFF" />
-          <Text style={styles.buttonText}>{i18n.t('new_round')}</Text>
-        </TouchableOpacity>
+          {i18n.t('new_round')}
+        </Button>
       </View>
 
       {/* Config Edit Modal */}
@@ -531,7 +538,8 @@ export const ActiveMatchScreen: React.FC = () => {
           </ScrollView>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </WallpaperBackground>
   );
 };
 
@@ -566,10 +574,7 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     flex: 1,
-    marginHorizontal: 8,
-    marginBottom: 100,
-    borderRadius: 12,
-    padding: 12,
+    marginBottom: 80,
   },
   tableTitle: {
     fontSize: 18,

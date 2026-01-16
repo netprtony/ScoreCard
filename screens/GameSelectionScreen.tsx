@@ -15,6 +15,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { GameType } from '../types/models';
 import { MatchStackParamList } from '../types/navigation';
 import { getAllGameTypes } from '../services/gameTypeService';
+import { Badge } from '../components/rn-ui';
+import { Card } from '../components/Card';
+import { WallpaperBackground } from '../components/WallpaperBackground';
 
 type GameSelectionNavigationProp = NativeStackNavigationProp<MatchStackParamList, 'GameSelection'>;
 
@@ -46,45 +49,40 @@ export const GameSelectionScreen: React.FC = () => {
   };
 
   const renderGameCard = ({ item }: { item: GameType }) => (
-    <TouchableOpacity
-      style={[
-        styles.gameCard,
-        {
-          backgroundColor: theme.card,
-          borderColor: item.isActive ? theme.primary : theme.border,
-          opacity: item.isActive ? 1 : 0.6,
-        },
-      ]}
-      onPress={() => handleSelectGame(item)}
-      disabled={!item.isActive}
+    <Card
+      onPress={item.isActive ? () => handleSelectGame(item) : undefined}
+      selected={false}
+      accentColor={item.isActive ? theme.primary : theme.border}
+      style={{ opacity: item.isActive ? 1 : 0.6 }}
     >
-      <View style={styles.gameIconContainer}>
-        <Text style={styles.gameIcon}>{item.icon}</Text>
-      </View>
+      <View style={styles.cardContent}>
+        <View style={styles.gameIconContainer}>
+          <Text style={styles.gameIcon}>{item.icon}</Text>
+        </View>
 
-      <View style={styles.gameInfo}>
-        <Text style={[styles.gameName, { color: theme.text }]}>
-          {item.name}
-        </Text>
-        <Text style={[styles.gameDescription, { color: theme.textSecondary }]}>
-          {item.description}
-        </Text>
-      </View>
-
-      {item.isActive ? (
-        <Ionicons name="chevron-forward" size={24} color={theme.primary} />
-      ) : (
-        <View style={[styles.comingSoonBadge, { backgroundColor: theme.warning + '20' }]}>
-          <Text style={[styles.comingSoonText, { color: theme.warning }]}>
-            {t('comingSoon')}
+        <View style={styles.gameInfo}>
+          <Text style={[styles.gameName, { color: theme.text }]}>
+            {item.name}
+          </Text>
+          <Text style={[styles.gameDescription, { color: theme.textSecondary }]}>
+            {item.description}
           </Text>
         </View>
-      )}
-    </TouchableOpacity>
+
+        {item.isActive ? (
+          <Ionicons name="chevron-forward" size={24} color={theme.primary} />
+        ) : (
+          <Badge variant="outline" style={{ backgroundColor: theme.warning + '20' }}>
+            {t('comingSoon')}
+          </Badge>
+        )}
+      </View>
+    </Card>
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <WallpaperBackground>
+      <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>
           {t('selectGame')}
@@ -100,7 +98,8 @@ export const GameSelectionScreen: React.FC = () => {
         renderItem={renderGameCard}
         contentContainerStyle={styles.list}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </WallpaperBackground>
   );
 };
 
@@ -123,14 +122,12 @@ const styles = StyleSheet.create({
   list: {
     padding: 20,
     paddingTop: 8,
+    gap: 16,
   },
-  gameCard: {
+  cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 2,
-    marginBottom: 16,
+    padding: 4,
   },
   gameIconContainer: {
     width: 60,

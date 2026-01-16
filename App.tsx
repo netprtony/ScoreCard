@@ -7,6 +7,7 @@ import { useFonts } from 'expo-font';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { MatchProvider } from './contexts/MatchContext';
+import { WallpaperProvider } from './contexts/WallpaperContext';
 import { AppNavigator } from './navigation/AppNavigator';
 import { initDatabase } from './services/database';
 
@@ -61,11 +62,13 @@ const AppContent: React.FC = () => {
 export default function App() {
   return (
     <ThemeProvider>
-      <LanguageProvider>
-        <MatchProvider>
-          <AppContent />
-        </MatchProvider>
-      </LanguageProvider>
+      <WallpaperProvider>
+        <LanguageProvider>
+          <MatchProvider>
+            <AppContent />
+          </MatchProvider>
+        </LanguageProvider>
+      </WallpaperProvider>
     </ThemeProvider>
   );
 }

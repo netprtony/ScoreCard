@@ -40,7 +40,6 @@ export const initDatabase = (): void => {
                 penalty_tu_quy INTEGER NOT NULL,
                 chat_heo_black INTEGER NOT NULL,
                 chat_heo_red INTEGER NOT NULL,
-                chong_heo_multiplier INTEGER NOT NULL,
                 dut_ba_tep INTEGER NOT NULL,
                 enable_toi_trang INTEGER NOT NULL,
                 enable_kill INTEGER NOT NULL,
@@ -187,17 +186,17 @@ export const initDatabase = (): void => {
                 toi_trang_multiplier, kill_multiplier,
                 penalty_heo_den, penalty_heo_do, penalty_ba_tep,
                 penalty_ba_doi_thong, penalty_tu_quy,
-                chat_heo_black, chat_heo_red, chong_heo_multiplier,
+                chat_heo_black, chat_heo_red,
                 dut_ba_tep, enable_toi_trang, enable_kill,
                 enable_penalties, enable_chat_heo, enable_dut_ba_tep,
                 is_default, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
             [
                 'default', 'Cấu hình mặc định', 10, 5,
                 2, 2,
                 5, 10, 5,
                 10, 10,
-                5, 10, 2,
+                5, 10,
                 5, 1, 1,
                 1, 1, 1,
                 1, Date.now()

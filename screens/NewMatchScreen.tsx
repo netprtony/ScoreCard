@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { PlayerCard } from '../components/PlayerCard';
+import { PlayerCard } from '../components/Card';
 import { ScoreDisplay } from '../components/ScoreDisplay';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { Player, ScoringConfig, MatchPlayerResult, PenaltyType } from '../types/models';
@@ -22,6 +22,8 @@ import { createMatch } from '../services/matchService';
 import { calculateRoundScores } from '../utils/scoringEngine';
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
+import { Badge, Button } from '../components/rn-ui';
+import { Card } from '../components/Card';
 type MatchStep = 'select_players' | 'select_config' | 'input_results' | 'review';
 
 export const NewMatchScreen: React.FC = () => {
@@ -252,18 +254,20 @@ export const NewMatchScreen: React.FC = () => {
           </Text>
         </View>
 
-        <View style={[styles.selectedContainer, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.selectedTitle, { color: theme.text }]}>
-            Đã chọn: {selectedPlayers.length}/4
-          </Text>
-          <View style={styles.selectedPlayers}>
-            {selectedPlayers.map((player, index) => (
-              <View key={player.id} style={[styles.selectedChip, { backgroundColor: player.color || theme.primary }]}>
-                <Text style={styles.selectedChipText}>{player.name}</Text>
-              </View>
-            ))}
+        <Card style={{ marginHorizontal: 20, marginBottom: 12 }}>
+          <View style={{ padding: 4 }}>
+            <Text style={[styles.selectedTitle, { color: theme.text }]}>
+              Đã chọn: {selectedPlayers.length}/4
+            </Text>
+            <View style={styles.selectedPlayers}>
+              {selectedPlayers.map((player, index) => (
+                <Badge key={player.id} variant="default" style={{ backgroundColor: player.color || theme.primary }}>
+                  {player.name}
+                </Badge>
+              ))}
+            </View>
           </View>
-        </View>
+        </Card>
 
         <ScrollView contentContainerStyle={styles.list}>
           {players.map(player => (
@@ -305,13 +309,15 @@ export const NewMatchScreen: React.FC = () => {
 
         <ScrollView contentContainerStyle={styles.list}>
           {matchResults.map((result, index) => (
-            <View
+            <Card
               key={index}
-              style={[styles.resultCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+              
+              style={{ marginBottom: 12 }}
             >
-              <Text style={[styles.resultPlayerName, { color: theme.text }]}>
-                {result.playerName}
-              </Text>
+              <View style={{ padding: 4 }}>
+                <Text style={[styles.resultPlayerName, { color: theme.text }]}>
+                  {result.playerName}
+                </Text>
 
               {/* Rank */}
               <View style={styles.rankRow}>
@@ -418,7 +424,8 @@ export const NewMatchScreen: React.FC = () => {
                   />
                 </View>
               )}
-            </View>
+              </View>
+            </Card>
           ))}
         </ScrollView>
 

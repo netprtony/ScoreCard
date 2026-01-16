@@ -8,6 +8,9 @@ import { formatActionDescription, formatToiTrangAction } from '../utils/actionFo
 import { showSuccess, showWarning } from '../utils/toast';
 import { getPlayerById } from '../services/playerService';
 import i18n from '../utils/i18n';
+import { Button } from '../components/rn-ui';
+import { WallpaperBackground } from '../components/WallpaperBackground';
+import { Card } from '../components/Card';
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -181,7 +184,8 @@ export const RoundDetailsScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <WallpaperBackground>
+      <View style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -198,7 +202,7 @@ export const RoundDetailsScreen: React.FC = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Actions Section */}
         {(round.toiTrangWinner || (Array.isArray(round.actions) && round.actions.length > 0)) && (
-          <View style={[styles.section, { backgroundColor: theme.card }]}>
+          <Card style={{ margin: 16 }}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               📊 {i18n.t('actions')}
             </Text>
@@ -424,11 +428,11 @@ export const RoundDetailsScreen: React.FC = () => {
                 return sacTeActions;
               })()}
             </ScrollView>
-          </View>
+          </Card>
         )}
 
         {/* Rank Results Section */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
+        <Card style={{ margin: 16 }}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             🏆 {i18n.t('matchResults')}
           </Text>
@@ -496,10 +500,10 @@ export const RoundDetailsScreen: React.FC = () => {
               );
             });
           })()}
-        </View>
+        </Card>
 
         {/* Scores Section */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
+        <Card style={{ margin: 16 }}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             📝 {i18n.t('totalScoreChange')}
           </Text>
@@ -518,20 +522,22 @@ export const RoundDetailsScreen: React.FC = () => {
               </View>
             );
           })}
-        </View>
+        </Card>
       </ScrollView>
 
       {/* Save Button */}
       <View style={[styles.footer, { backgroundColor: theme.card, borderTopColor: theme.border }]}>
-        <TouchableOpacity
-          style={[styles.saveButton, { backgroundColor: theme.primary }]}
+        <Button
           onPress={handleSave}
+          icon={<Ionicons name="checkmark" size={24} color="#FFF" />}
+          size="lg"
+          style={{ width: '100%' }}
         >
-          <Ionicons name="checkmark" size={24} color="#FFF" />
-          <Text style={styles.saveButtonText}>{i18n.t('save')} {i18n.t('edit')}</Text>
-        </TouchableOpacity>
+          {i18n.t('save')} {i18n.t('edit')}
+        </Button>
       </View>
-    </View>
+      </View>
+    </WallpaperBackground>
   );
 };
 

@@ -17,6 +17,9 @@ import { Player, GameType, SacTeConfig } from '../types/models';
 import { getDefaultSacTeConfig } from '../services/sacTeConfigService';
 import { getPlayerById } from '../services/playerService';
 import { showSuccess, showWarning } from '../utils/toast';
+import { Button } from '../components/rn-ui';
+import { Card } from '../components/Card';
+import { WallpaperBackground } from '../components/WallpaperBackground';
 
 export const SacTeConfigSetupScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -123,16 +126,19 @@ export const SacTeConfigSetupScreen: React.FC = () => {
 
   if (!config) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <WallpaperBackground>
+        <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: theme.text }]}>Đang tải...</Text>
         </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </WallpaperBackground>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <WallpaperBackground>
+      <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color={theme.text} />
@@ -149,98 +155,108 @@ export const SacTeConfigSetupScreen: React.FC = () => {
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Hệ số cơ bản */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Hệ số cơ bản</Text>
-          
-          <View style={styles.inputRow}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số Gục:</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-              value={(config.heSoGuc ?? 0).toString()}
-              onChangeText={(text) => updateConfig('heSoGuc', parseInt(text) || 0)}
-              keyboardType="numeric"
-            />
-          </View>
+        <Card  style={{ marginBottom: 16 }}>
+          <View style={{ padding: 4 }}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Hệ số cơ bản</Text>
+            
+            <View style={styles.inputRow}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số Gục:</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                value={(config.heSoGuc ?? 0).toString()}
+                onChangeText={(text) => updateConfig('heSoGuc', parseInt(text) || 0)}
+                keyboardType="numeric"
+              />
+            </View>
 
-          <View style={styles.inputRow}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số Tồn:</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-              value={(config.heSoTon ?? 0).toString()}
-              onChangeText={(text) => updateConfig('heSoTon', parseInt(text) || 0)}
-              keyboardType="numeric"
-            />
-          </View>
+            <View style={styles.inputRow}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số Tồn:</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                value={(config.heSoTon ?? 0).toString()}
+                onChangeText={(text) => updateConfig('heSoTon', parseInt(text) || 0)}
+                keyboardType="numeric"
+              />
+            </View>
 
-          <View style={styles.inputRow}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số Tới Trắng:</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-              value={(config.whiteWinMultiplier ?? 0).toString()}
-              onChangeText={(text) => updateConfig('whiteWinMultiplier', parseInt(text) || 0)}
-              keyboardType="numeric"
-            />
+            <View style={styles.inputRow}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số Tới Trắng:</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                value={(config.whiteWinMultiplier ?? 0).toString()}
+                onChangeText={(text) => updateConfig('whiteWinMultiplier', parseInt(text) || 0)}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
-        </View>
+        </Card>
 
         {/* Cá Nước */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <View style={styles.switchRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Cá Nước</Text>
-            <Switch
-              value={config.caNuoc.enabled}
-              onValueChange={(value) => updateCaNuoc('enabled', value)}
-              trackColor={{ false: theme.border, true: theme.primary }}
-              thumbColor="#FFF"
-            />
-          </View>
-          
-          {config.caNuoc.enabled && (
-            <View style={styles.inputRow}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số:</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-                value={(config.caNuoc?.heSo ?? 0).toString()}
-                onChangeText={(text) => updateCaNuoc('heSo', parseInt(text) || 0)}
-                keyboardType="numeric"
+        <Card  style={{ marginBottom: 16 }}>
+          <View style={{ padding: 4 }}>
+            <View style={styles.switchRow}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Cá Nước</Text>
+              <Switch
+                value={config.caNuoc.enabled}
+                onValueChange={(value) => updateCaNuoc('enabled', value)}
+                trackColor={{ false: theme.border, true: theme.primary }}
+                thumbColor="#FFF"
               />
             </View>
-          )}
-        </View>
+            
+            {config.caNuoc.enabled && (
+              <View style={styles.inputRow}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số:</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                  value={(config.caNuoc?.heSo ?? 0).toString()}
+                  onChangeText={(text) => updateCaNuoc('heSo', parseInt(text) || 0)}
+                  keyboardType="numeric"
+                />
+              </View>
+            )}
+          </View>
+        </Card>
 
         {/* Cá Heo */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <View style={styles.switchRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Cá Heo</Text>
-            <Switch
-              value={config.caHeo.enabled}
-              onValueChange={(value) => updateCaHeo('enabled', value)}
-              trackColor={{ false: theme.border, true: theme.primary }}
-              thumbColor="#FFF"
-            />
-          </View>
-          
-          {config.caHeo.enabled && (
-            <View style={styles.inputRow}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số:</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-                value={(config.caHeo?.heSo ?? 0).toString()}
-                onChangeText={(text) => updateCaHeo('heSo', parseInt(text) || 0)}
-                keyboardType="numeric"
+        <Card style={{ marginBottom: 16 }}>
+          <View style={{ padding: 4 }}>
+            <View style={styles.switchRow}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Cá Heo</Text>
+              <Switch
+                value={config.caHeo.enabled}
+                onValueChange={(value) => updateCaHeo('enabled', value)}
+                trackColor={{ false: theme.border, true: theme.primary }}
+                thumbColor="#FFF"
               />
             </View>
-          )}
-        </View>
+            
+            {config.caHeo.enabled && (
+              <View style={styles.inputRow}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Hệ số:</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                  value={(config.caHeo?.heSo ?? 0).toString()}
+                  onChangeText={(text) => updateCaHeo('heSo', parseInt(text) || 0)}
+                  keyboardType="numeric"
+                />
+              </View>
+            )}
+          </View>
+        </Card>
       </ScrollView>
 
-      <TouchableOpacity
-        style={[styles.startButton, { backgroundColor: theme.primary }]}
-        onPress={handleStartMatch}
-      >
-        <Text style={styles.startButtonText}>{t('start_match')}</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+      <View style={styles.buttonWrapper}>
+        <Button
+          onPress={handleStartMatch}
+          size="lg"
+          style={{ width: '100%' }}
+        >
+          {t('start_match')}
+        </Button>
+      </View>
+      </SafeAreaView>
+    </WallpaperBackground>
   );
 };
 
@@ -299,19 +315,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  startButton: {
+  buttonWrapper: {
     position: 'absolute',
     bottom: 20,
     left: 20,
     right: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  startButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
   loadingContainer: {
     flex: 1,

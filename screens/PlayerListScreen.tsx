@@ -5,8 +5,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  TextInput,
-  Modal,
   Alert,
   SafeAreaView,
   Image,
@@ -18,7 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme } from '../contexts/ThemeContext';
-import { PlayerCard } from '../components/PlayerCard';
+import { PlayerCard } from '../components/Card';
 import { Player } from '../types/models';
 import {
   getAllPlayers,
@@ -30,6 +28,8 @@ import {
 import { Fonts } from '../constants/fonts';
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
+import { Button, Dialog, DialogHeader, DialogTitle, DialogContent, DialogFooter, Input } from '../components/rn-ui';
+import { WallpaperBackground } from '../components/WallpaperBackground';
 
 // Helper function to convert HSL to Hex
 const hslToHex = (h: number, s: number, l: number): string => {
@@ -349,12 +349,13 @@ export const PlayerListScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <WallpaperBackground>
+      <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>
           {i18n.t('playerList')}
         </Text>
-        <Text style={[styles.count, { color: theme.textSecondary }]}>
+        <Text style={[styles.count, { color: theme.text }]}>
           {players.length}/10 {i18n.t('players').toLowerCase()}
         </Text>
       </View>
@@ -387,151 +388,111 @@ export const PlayerListScreen: React.FC = () => {
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: theme.primary }]}
         onPress={() => setShowAddModal(true)}
+        activeOpacity={0.8}
       >
         <Ionicons name="add" size={32} color="#FFF" />
       </TouchableOpacity>
 
       {/* Add Player Modal */}
-      <Modal
+      <Dialog
         visible={showAddModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowAddModal(false)}
+        onClose={() => setShowAddModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              {i18n.t('addPlayer')}
-            </Text>
+        <DialogHeader>
+          <DialogTitle>{i18n.t('addPlayer')}</DialogTitle>
+        </DialogHeader>
 
-            <ScrollView 
-              showsVerticalScrollIndicator={false}
-              style={styles.modalScrollView}
-              nestedScrollEnabled={true}
-              scrollEnabled={true}
-            >
-              <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.surface,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder={i18n.t('playerName')}
-              placeholderTextColor={theme.placeholder}
-              value={playerName}
-              onChangeText={setPlayerName}
-              autoFocus
-            />
+        <DialogContent scrollable>
+          <Input
+            placeholder={i18n.t('playerName')}
+            value={playerName}
+            onChangeText={setPlayerName}
+            autoFocus
+            containerStyle={{ marginBottom: 16 }}
+          />
 
-            {/* Avatar Picker */}
-            {renderAvatarPicker()}
+          {/* Avatar Picker */}
+          {renderAvatarPicker()}
 
-            {/* Color Picker */}
-            {renderColorPicker()}
-            </ScrollView>
+          {/* Color Picker */}
+          {renderColorPicker()}
+        </DialogContent>
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: theme.surface }]}
-                onPress={() => {
-                  setPlayerName('');
-                  setSelectedAvatar(undefined);
-                  setShowAddModal(false);
-                }}
-              >
-                <Text style={[styles.buttonText, { color: theme.text }]}>
-                  {i18n.t('cancel')}
-                </Text>
-              </TouchableOpacity>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onPress={() => {
+              setPlayerName('');
+              setSelectedAvatar(undefined);
+              setShowAddModal(false);
+            }}
+            style={{ flex: 1 }}
+          >
+            {i18n.t('cancel')}
+          </Button>
 
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: theme.primary }]}
-                onPress={handleAddPlayer}
-                disabled={loading}
-              >
-                <Text style={[styles.buttonText, { color: '#FFF' }]}>
-                  {i18n.t('save')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+          <Button
+            onPress={handleAddPlayer}
+            loading={loading}
+            disabled={loading}
+            style={{ flex: 1 }}
+          >
+            {i18n.t('save')}
+          </Button>
+        </DialogFooter>
+      </Dialog>
 
       {/* Edit Player Modal */}
-      <Modal
+      <Dialog
         visible={showEditModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowEditModal(false)}
+        onClose={() => setShowEditModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              {i18n.t('editPlayer')}
-            </Text>
+        <DialogHeader>
+          <DialogTitle>{i18n.t('editPlayer')}</DialogTitle>
+        </DialogHeader>
 
-            <ScrollView 
-              showsVerticalScrollIndicator={false}
-              style={styles.modalScrollView}
-              nestedScrollEnabled={true}
-              scrollEnabled={true}
-            >
-              <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.surface,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder={i18n.t('playerName')}
-              placeholderTextColor={theme.placeholder}
-              value={playerName}
-              onChangeText={setPlayerName}
-              autoFocus
-            />
+        <DialogContent scrollable>
+          <Input
+            placeholder={i18n.t('playerName')}
+            value={playerName}
+            onChangeText={setPlayerName}
+            autoFocus
+            containerStyle={{ marginBottom: 16 }}
+          />
 
-            {/* Avatar Picker */}
-            {renderAvatarPicker()}
+          {/* Avatar Picker */}
+          {renderAvatarPicker()}
 
-            {/* Color Picker */}
-            {renderColorPicker()}
-            </ScrollView>
+          {/* Color Picker */}
+          {renderColorPicker()}
+        </DialogContent>
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: theme.surface }]}
-                onPress={() => {
-                  setPlayerName('');
-                  setSelectedAvatar(undefined);
-                  setEditingPlayer(null);
-                  setShowEditModal(false);
-                }}
-              >
-                <Text style={[styles.buttonText, { color: theme.text }]}>
-                  {i18n.t('cancel')}
-                </Text>
-              </TouchableOpacity>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onPress={() => {
+              setPlayerName('');
+              setSelectedAvatar(undefined);
+              setEditingPlayer(null);
+              setShowEditModal(false);
+            }}
+            style={{ flex: 1 }}
+          >
+            {i18n.t('cancel')}
+          </Button>
 
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: theme.primary }]}
-                onPress={handleEditPlayer}
-                disabled={loading}
-              >
-                <Text style={[styles.buttonText, { color: '#FFF' }]}>
-                  {i18n.t('save')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+          <Button
+            onPress={handleEditPlayer}
+            loading={loading}
+            disabled={loading}
+            style={{ flex: 1 }}
+          >
+            {i18n.t('save')}
+          </Button>
+        </DialogFooter>
+      </Dialog>
+      </SafeAreaView>
+    </WallpaperBackground>
   );
 };
 

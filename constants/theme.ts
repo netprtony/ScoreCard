@@ -3,7 +3,7 @@ export const lightTheme = {
     surface: '#F5F5F5',
     card: '#FFFFFF',
     text: '#000000',
-    textSecondary: '#666666',
+    textSecondary: '#181818ff',
     primary: '#2196F3',
     primaryDark: '#1976D2',
     success: '#4CAF50',

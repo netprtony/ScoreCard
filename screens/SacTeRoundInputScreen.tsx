@@ -22,6 +22,9 @@ import { getPlayerById } from '../services/playerService';
 import { calculateSacTeRoundScores } from '../utils/sacTeScoringEngine';
 import { showSuccess, showWarning } from '../utils/toast';
 import { updateSacTeConfig } from '../services/sacTeMatchService';
+import { Button } from '../components/rn-ui';
+import { WallpaperBackground } from '../components/WallpaperBackground';
+import { Card } from '../components/Card';
 
 export const SacTeRoundInputScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -87,11 +90,13 @@ export const SacTeRoundInputScreen: React.FC = () => {
 
   if (!activeMatch) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <WallpaperBackground>
+        <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyText, { color: theme.text }]}>Không có trận đấu</Text>
         </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </WallpaperBackground>
     );
   }
 
@@ -360,7 +365,8 @@ export const SacTeRoundInputScreen: React.FC = () => {
 
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <WallpaperBackground>
+      <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color={theme.text} />
@@ -389,7 +395,7 @@ export const SacTeRoundInputScreen: React.FC = () => {
           const status = playerStatuses[playerId] ?? { isGuc: false, hasTon: false };
 
           return (
-            <View key={playerId} style={[styles.playerCard, { backgroundColor: theme.card }]}>
+            <Card key={playerId} accentColor={playerColor}>
               {/* Player Header */}
               <View style={styles.playerHeader}>
                 <View style={[styles.playerAvatar, { backgroundColor: playerColor }]}>
@@ -519,17 +525,20 @@ export const SacTeRoundInputScreen: React.FC = () => {
                   </TouchableOpacity>
                 )}
               </View>
-            </View>
+            </Card>
           );
         })}
       </ScrollView>
 
-      <TouchableOpacity
-        style={[styles.saveButton, { backgroundColor: theme.primary }]}
-        onPress={calculateAndSave}
-      >
-        <Text style={styles.saveButtonText}>Tính điểm và lưu</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonWrapper}>
+        <Button
+          onPress={calculateAndSave}
+          size="lg"
+          style={{ width: '100%' }}
+        >
+          Tính điểm và lưu
+        </Button>
+      </View>
 
       {/* Config Modal */}
       <Modal
@@ -633,23 +642,25 @@ export const SacTeRoundInputScreen: React.FC = () => {
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: theme.surface }]}
+              <Button
+                variant="outline"
                 onPress={() => setShowConfigModal(false)}
+                style={{ flex: 1 }}
               >
-                <Text style={[styles.modalButtonText, { color: theme.text }]}>Hủy</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: theme.primary }]}
+                Hủy
+              </Button>
+              <Button
                 onPress={saveConfigChanges}
+                style={{ flex: 1 }}
               >
-                <Text style={[styles.modalButtonText, { color: '#FFF' }]}>Lưu</Text>
-              </TouchableOpacity>
+                Lưu
+              </Button>
             </View>
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </WallpaperBackground>
   );
 };
 
@@ -769,19 +780,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  saveButton: {
+  buttonWrapper: {
     position: 'absolute',
     bottom: 20,
     left: 20,
     right: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
   emptyContainer: {
     flex: 1,

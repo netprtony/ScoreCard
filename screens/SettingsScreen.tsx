@@ -6,25 +6,34 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
+  Switch as RNSwitch,
   SafeAreaView,
   Linking,
   Modal,
   Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+
+import { useWallpaper, WALLPAPER_DEFINITIONS } from '../contexts/WallpaperContext';
 import { getSettings, updateSettings } from '../services/settingsService';
 import { AppSettings } from '../types/models';
 import appJson from '../app.json';
+import { Separator, Dialog, DialogHeader, DialogTitle, DialogContent } from '../components/rn-ui';
+import { Card } from '../components/Card';
+import { WallpaperBackground } from '../components/WallpaperBackground';
 
 export const SettingsScreen: React.FC = () => {
   const { theme, themeMode, setThemeMode } = useTheme();
   const { language, setLanguage, t } = useLanguage();
+  const { wallpaper, setWallpaper } = useWallpaper();
   const [settings, setSettingsState] = useState<AppSettings | null>(null);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showWallpaperModal, setShowWallpaperModal] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -58,12 +67,20 @@ export const SettingsScreen: React.FC = () => {
     await loadSettings();
   };
 
+  const handleWallpaperSelect = async (wallpaperId: string) => {
+    await setWallpaper(wallpaperId);
+    setShowWallpaperModal(false);
+  };
+
+
+
   if (!settings) {
     return null;
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <WallpaperBackground>
+      <SafeAreaView style={styles.container}>
       <ScrollView>
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.text }]}>
@@ -77,7 +94,7 @@ export const SettingsScreen: React.FC = () => {
             {t('theme')}
           </Text>
 
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <Card blurIntensity={20}>
             <TouchableOpacity
               style={styles.option}
               onPress={() => handleThemeChange('light')}
@@ -93,7 +110,7 @@ export const SettingsScreen: React.FC = () => {
               )}
             </TouchableOpacity>
 
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <Separator />
 
             <TouchableOpacity
               style={styles.option}
@@ -110,7 +127,7 @@ export const SettingsScreen: React.FC = () => {
               )}
             </TouchableOpacity>
 
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <Separator />
 
             <TouchableOpacity
               style={styles.option}
@@ -126,7 +143,7 @@ export const SettingsScreen: React.FC = () => {
                 <Ionicons name="checkmark" size={24} color={theme.primary} />
               )}
             </TouchableOpacity>
-          </View>
+          </Card>
         </View>
 
         {/* Language Section */}
@@ -135,7 +152,7 @@ export const SettingsScreen: React.FC = () => {
             {t('language')}
           </Text>
 
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <Card blurIntensity={15}>
             <TouchableOpacity
               style={styles.option}
               onPress={() => handleLanguageChange('vi')}
@@ -150,7 +167,7 @@ export const SettingsScreen: React.FC = () => {
               )}
             </TouchableOpacity>
 
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <Separator />
 
             <TouchableOpacity
               style={styles.option}
@@ -165,16 +182,36 @@ export const SettingsScreen: React.FC = () => {
                 <Ionicons name="checkmark" size={24} color={theme.primary} />
               )}
             </TouchableOpacity>
-          </View>
+          </Card>
         </View>
 
         {/* Display Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            {t('about')}
+            {t('display')}
           </Text>
 
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <Card blurIntensity={15}>
+            <TouchableOpacity
+              style={styles.option}
+              onPress={() => setShowWallpaperModal(true)}
+            >
+              <View style={styles.optionLeft}>
+                <Ionicons name="image" size={24} color={theme.text} />
+                <Text style={[styles.optionText, { color: theme.text }]}>
+                  Hình nền
+                </Text>
+              </View>
+              <View style={styles.optionRight}>
+                <Text style={[styles.optionSubtext, { color: theme.textSecondary }]}>
+                  {wallpaper.id === 'default' ? 'Mặc định' : 'Tùy chỉnh'}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+              </View>
+            </TouchableOpacity>
+
+            <Separator />
+
             <View style={styles.option}>
               <View style={styles.optionLeft}>
                 <Ionicons name="bulb" size={24} color={theme.text} />
@@ -182,14 +219,14 @@ export const SettingsScreen: React.FC = () => {
                   {t('keepScreenOn')}
                 </Text>
               </View>
-              <Switch
+              <RNSwitch
                 value={settings.keepScreenAwake}
                 onValueChange={handleKeepScreenAwake}
                 trackColor={{ false: theme.border, true: theme.primary }}
                 thumbColor="#FFF"
               />
             </View>
-          </View>
+          </Card>
         </View>
 
         {/* About Section */}
@@ -198,7 +235,7 @@ export const SettingsScreen: React.FC = () => {
             {t('about')}
           </Text>
 
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <Card blurIntensity={20}>
             <View style={styles.option}>
               <View style={styles.optionLeft}>
                 <Ionicons name="information-circle" size={24} color={theme.text} />
@@ -213,7 +250,7 @@ export const SettingsScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <Separator />
 
             <View style={styles.option}>
               <View style={styles.optionLeft}>
@@ -229,7 +266,7 @@ export const SettingsScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <Separator />
 
             <TouchableOpacity 
               style={styles.option}
@@ -244,7 +281,7 @@ export const SettingsScreen: React.FC = () => {
               <Ionicons name="chevron-forward" size={24} color={theme.textSecondary} />
             </TouchableOpacity>
 
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <Separator />
 
             <TouchableOpacity 
               style={styles.option}
@@ -276,7 +313,7 @@ export const SettingsScreen: React.FC = () => {
                 </Text>
               </View>
             </TouchableOpacity>
-          </View>
+          </Card>
         </View>
 
         <View style={styles.footer}>
@@ -372,14 +409,80 @@ export const SettingsScreen: React.FC = () => {
             </Text>
             <Text style={[styles.policyText, { color: theme.text }]}>
               If you have any questions regarding this Privacy Policy, please contact:
-              {"\n"}{"\n"}
-              📧 Email: huynhvikhang6a13@gmail.com{"\n"}{"\n"}
             </Text>
           </ScrollView>
 
         </SafeAreaView>
       </Modal>
+
+      {/* Wallpaper Selection Modal */}
+      <Dialog
+        visible={showWallpaperModal}
+        onClose={() => setShowWallpaperModal(false)}
+      >
+        <DialogHeader>
+          <DialogTitle>Chọn hình nền</DialogTitle>
+        </DialogHeader>
+        <DialogContent scrollable>
+          {/* Default Option */}
+          <TouchableOpacity
+            style={[
+              styles.wallpaperOption,
+              {
+                backgroundColor: theme.card,
+                borderColor: wallpaper.id === 'default' ? theme.primary : theme.border,
+                borderWidth: 2,
+              }
+            ]}
+            onPress={() => handleWallpaperSelect('default')}
+          >
+            <View style={[styles.wallpaperPreview, { backgroundColor: theme.background }]}>
+              <Ionicons name="close" size={32} color={theme.textSecondary} />
+            </View>
+            <Text style={[styles.wallpaperName, { color: theme.text }]}>Mặc định</Text>
+            {wallpaper.id === 'default' && (
+              <Ionicons name="checkmark-circle" size={24} color={theme.primary} style={styles.wallpaperCheck} />
+            )}
+          </TouchableOpacity>
+
+          {/* Wallpaper Grid */}
+          <View style={styles.wallpaperGrid}>
+            {Object.values(WALLPAPER_DEFINITIONS)
+              .filter(w => w.id !== 'default')
+              .map((wallpaperItem) => (
+                <TouchableOpacity
+                  key={wallpaperItem.id}
+                  style={[
+                    styles.wallpaperOption,
+                    {
+                      backgroundColor: theme.card,
+                      borderColor: wallpaper.id === wallpaperItem.id ? theme.primary : theme.border,
+                      borderWidth: 2,
+                      width: '48%', // 2 items per row with gap
+                    }
+                  ]}
+                  onPress={() => handleWallpaperSelect(wallpaperItem.id)}
+                >
+                  <View style={styles.wallpaperPreview}>
+                    <Image
+                      source={wallpaperItem.source}
+                      style={styles.imagePreview}
+                      resizeMode="cover"
+                    />
+                  </View>
+                  <Text style={[styles.wallpaperName, { color: theme.text }]} numberOfLines={1}>
+                    {wallpaperItem.name}
+                  </Text>
+                  {wallpaper.id === wallpaperItem.id && (
+                    <Ionicons name="checkmark-circle" size={24} color={theme.primary} style={styles.wallpaperCheck} />
+                  )}
+                </TouchableOpacity>
+              ))}
+          </View>
+        </DialogContent>
+      </Dialog>
     </SafeAreaView>
+    </WallpaperBackground>
   );
 };
 
@@ -413,7 +516,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
   },
   optionLeft: {
     flexDirection: 'row',
@@ -479,6 +582,61 @@ const styles = StyleSheet.create({
   policyText: {
     fontSize: 14,
     lineHeight: 22,
+    marginBottom: 16,
+  },
+  optionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  wallpaperOption: {
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 12,
+    position: 'relative',
+  },
+  wallpaperPreview: {
+    width: '100%',
+    height: 80,
+    borderRadius: 8,
+    marginBottom: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  wallpaperName: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  wallpaperCheck: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+  },
+  categorySection: {
+    marginTop: 20,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  wallpaperGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
   },
 });

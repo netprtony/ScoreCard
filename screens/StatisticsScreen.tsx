@@ -14,6 +14,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PlayerStats } from '../types/models';
 import { getAllPlayerStats } from '../services/statsService';
+import { WallpaperBackground } from '../components/WallpaperBackground';
+import { Card } from '../components/Card';
 
 export const StatisticsScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -64,7 +66,7 @@ export const StatisticsScreen: React.FC = () => {
   };
 
   const renderStatCard = ({ item, index }: { item: PlayerStats; index: number }) => (
-    <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+    <Card accentColor={item.playerColor || theme.primary}>
       <View style={styles.rankContainer}>
         <Text style={[styles.rankText, { color: theme.text }]}>
           {getRankIcon(index)}
@@ -129,99 +131,101 @@ export const StatisticsScreen: React.FC = () => {
           </Text>
         </View>
       </View>
-    </View>
+    </Card>
   );
 
   const sortedStats = getSortedStats();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          {t('statistics')}
-        </Text>
-      </View>
-
-      <View style={styles.sortContainer}>
-        <TouchableOpacity
-          style={[
-            styles.sortButton,
-            {
-              backgroundColor: sortBy === 'score' ? theme.primary : theme.surface,
-              borderColor: theme.border,
-            },
-          ]}
-          onPress={() => setSortBy('score')}
-        >
-          <Text
-            style={[
-              styles.sortButtonText,
-              { color: sortBy === 'score' ? '#FFF' : theme.text },
-            ]}
-          >
-            {t('sortByScore')}
+    <WallpaperBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.text }]}>
+            {t('statistics')}
           </Text>
-        </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={[
-            styles.sortButton,
-            {
-              backgroundColor: sortBy === 'wins' ? theme.primary : theme.surface,
-              borderColor: theme.border,
-            },
-          ]}
-          onPress={() => setSortBy('wins')}
-        >
-          <Text
+        <View style={styles.sortContainer}>
+          <TouchableOpacity
             style={[
-              styles.sortButtonText,
-              { color: sortBy === 'wins' ? '#FFF' : theme.text },
+              styles.sortButton,
+              {
+                backgroundColor: sortBy === 'score' ? theme.primary : theme.surface,
+                borderColor: theme.border,
+              },
             ]}
+            onPress={() => setSortBy('score')}
           >
-            {t('sortByWins')}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.sortButton,
-            {
-              backgroundColor: sortBy === 'matches' ? theme.primary : theme.surface,
-              borderColor: theme.border,
-            },
-          ]}
-          onPress={() => setSortBy('matches')}
-        >
-          <Text
-            style={[
-              styles.sortButtonText,
-              { color: sortBy === 'matches' ? '#FFF' : theme.text },
-            ]}
-          >
-            {t('sortByMatches')}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        data={sortedStats}
-        keyExtractor={(item) => item.playerId}
-        renderItem={renderStatCard}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="stats-chart-outline" size={64} color={theme.textSecondary} />
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              {t('noStatsYet')}
+            <Text
+              style={[
+                styles.sortButtonText,
+                { color: sortBy === 'score' ? '#FFF' : theme.text },
+              ]}
+            >
+              {t('sortByScore')}
             </Text>
-            <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
-              {t('playToSeeStats')}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.sortButton,
+              {
+                backgroundColor: sortBy === 'wins' ? theme.primary : theme.surface,
+                borderColor: theme.border,
+              },
+            ]}
+            onPress={() => setSortBy('wins')}
+          >
+            <Text
+              style={[
+                styles.sortButtonText,
+                { color: sortBy === 'wins' ? '#FFF' : theme.text },
+              ]}
+            >
+              {t('sortByWins')}
             </Text>
-          </View>
-        }
-      />
-    </SafeAreaView>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.sortButton,
+              {
+                backgroundColor: sortBy === 'matches' ? theme.primary : theme.surface,
+                borderColor: theme.border,
+              },
+            ]}
+            onPress={() => setSortBy('matches')}
+          >
+            <Text
+              style={[
+                styles.sortButtonText,
+                { color: sortBy === 'matches' ? '#FFF' : theme.text },
+              ]}
+            >
+              {t('sortByMatches')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={sortedStats}
+          keyExtractor={(item) => item.playerId}
+          renderItem={renderStatCard}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="stats-chart-outline" size={64} color={theme.textSecondary} />
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                {t('noStatsYet')}
+              </Text>
+              <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
+                {t('playToSeeStats')}
+              </Text>
+            </View>
+          }
+        />
+      </SafeAreaView>
+    </WallpaperBackground>
   );
 };
 

@@ -111,7 +111,7 @@ export const calculateRoundScores = (
                         break;
                 }
 
-                totalPenalty += points * count * config.chongHeoMultiplier;
+                totalPenalty += points * count
             });
 
             // Target loses points

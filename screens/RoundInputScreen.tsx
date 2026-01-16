@@ -24,6 +24,9 @@ import { calculateRoundScores, validateScores } from '../utils/scoringEngine';
 import { formatActionDescription, getActionIcon } from '../utils/actionFormatter';
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
+import { Button } from '../components/rn-ui';
+import { WallpaperBackground } from '../components/WallpaperBackground';
+import { Card } from '../components/Card';
 type PenaltyModalStep = 'select_type' | 'heo' | 'chong' | 'giet' | 'dut_ba_tep';
 
 export const RoundInputScreen: React.FC = () => {
@@ -128,11 +131,13 @@ export const RoundInputScreen: React.FC = () => {
 
   if (!activeMatch) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <WallpaperBackground>
+        <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyText, { color: theme.text }]}>{i18n.t('noMatch')}</Text>
         </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </WallpaperBackground>
     );
   }
 
@@ -515,7 +520,8 @@ export const RoundInputScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <WallpaperBackground>
+      <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color={theme.text} />
@@ -536,7 +542,7 @@ export const RoundInputScreen: React.FC = () => {
           const playerColor = player?.color || theme.primary;
 
           return (
-            <View key={playerId} style={[styles.playerCard, { backgroundColor: theme.card }]}>
+            <Card key={playerId} accentColor={playerColor}>
               <View style={styles.playerHeader}>
                 <View style={[styles.playerAvatar, { backgroundColor: playerColor }]}>
                   {player?.avatar ? (
@@ -623,13 +629,13 @@ export const RoundInputScreen: React.FC = () => {
                   <Text style={styles.penaltyButtonText}>{i18n.t('penalty')}</Text>
                 </TouchableOpacity>
               )}
-            </View>
+            </Card>
           );
         })}
 
         {/* Actions List Section */}
         {actions.length > 0 && (
-          <View style={[styles.actionsListSection, { backgroundColor: theme.card }]}>
+          <Card>
             <View style={styles.actionsListHeader}>
               <Text style={[styles.actionsListTitle, { color: theme.text }]}>
                 📋 Danh sách hành động ({actions.length})
@@ -659,16 +665,19 @@ export const RoundInputScreen: React.FC = () => {
                 </View>
               );
             })}
-          </View>
+          </Card>
         )}
       </ScrollView>
 
-      <TouchableOpacity
-        style={[styles.saveButton, { backgroundColor: theme.primary }]}
-        onPress={calculateAndSave}
-      >
-        <Text style={styles.saveButtonText}>{i18n.t('calculateAndSave')}</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonWrapper}>
+        <Button
+          onPress={calculateAndSave}
+          size="lg"
+          style={{ width: '100%' }}
+        >
+          {i18n.t('calculateAndSave')}
+        </Button>
+      </View>
 
       {/* Penalty Modal */}
       <Modal
@@ -1043,7 +1052,8 @@ export const RoundInputScreen: React.FC = () => {
           </BlurView>
         </TouchableWithoutFeedback>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </WallpaperBackground>
   );
 };
 
@@ -1070,8 +1080,7 @@ const styles = StyleSheet.create({
   toiTrangText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
   penaltyButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, gap: 8 },
   penaltyButtonText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
-  saveButton: { position: 'absolute', bottom: 20, left: 20, right: 20, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
-  saveButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  buttonWrapper: { position: 'absolute', bottom: 20, left: 20, right: 20 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { fontSize: 16 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end' },

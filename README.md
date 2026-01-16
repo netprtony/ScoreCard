@@ -204,7 +204,6 @@ interface ScoringConfig {
   // Chặt heo
   chatHeoBlack: number;
   chatHeoRed: number;
-  chongHeoMultiplier: number;
   
   // Đút 3 tép
   dutBaTep: number;

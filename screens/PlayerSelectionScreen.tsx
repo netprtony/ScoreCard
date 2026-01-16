@@ -12,12 +12,15 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { PlayerCard } from '../components/PlayerCard';
+import { PlayerCard } from '../components/Card';
 import { Player, GameType } from '../types/models';
 import { MatchStackParamList } from '../types/navigation';
 import { getAllPlayers } from '../services/playerService';
 import i18n from '../utils/i18n';
-import { showSuccess, showWarning } from '../utils/toast';
+import { showWarning } from '../utils/toast';
+import { Badge } from '../components/rn-ui';
+import { Card } from '../components/Card';
+import { WallpaperBackground } from '../components/WallpaperBackground';
 type PlayerSelectionNavigationProp = NativeStackNavigationProp<MatchStackParamList, 'PlayerSelection'>;
 
 export const PlayerSelectionScreen: React.FC = () => {
@@ -83,7 +86,8 @@ export const PlayerSelectionScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <WallpaperBackground>
+      <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color={theme.text} />
@@ -98,18 +102,20 @@ export const PlayerSelectionScreen: React.FC = () => {
         </View>
       </View>
 
-      <View style={[styles.selectedContainer, { backgroundColor: theme.surface }]}>
-        <Text style={[styles.selectedTitle, { color: theme.text }]}>
-          Đã chọn: {selectedPlayers.length}/{gameType?.id === 'sac_te' ? '2-5' : '4'}
-        </Text>
-        <View style={styles.selectedPlayers}>
-          {selectedPlayers.map((player) => (
-            <View key={player.id} style={[styles.selectedChip, { backgroundColor: theme.primary }]}>
-              <Text style={styles.selectedChipText}>{player.name}</Text>
-            </View>
-          ))}
+      <Card  style={{ marginHorizontal: 20, marginBottom: 12 }}>
+        <View style={{ padding: 4 }}>
+          <Text style={[styles.selectedTitle, { color: theme.text }]}>
+            Đã chọn: {selectedPlayers.length}/{gameType?.id === 'sac_te' ? '2-5' : '4'}
+          </Text>
+          <View style={styles.selectedPlayers}>
+            {selectedPlayers.map((player) => (
+              <Badge key={player.id} variant="default">
+                {player.name}
+              </Badge>
+            ))}
+          </View>
         </View>
-      </View>
+      </Card>
 
       <ScrollView 
         style={styles.list}
@@ -148,7 +154,8 @@ export const PlayerSelectionScreen: React.FC = () => {
       >
         <Ionicons name="arrow-forward" size={24} color="#FFF" />
       </TouchableOpacity>
-    </SafeAreaView>
+      </SafeAreaView>
+    </WallpaperBackground>
   );
 };
 

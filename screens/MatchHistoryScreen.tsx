@@ -20,6 +20,9 @@ import { getCompletedMatches, deleteMatch } from '../services/matchService';
 import { getPlayerById } from '../services/playerService';
 import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
+import { Button } from '../components/rn-ui';
+import { Card } from '../components/Card';
+import { WallpaperBackground } from '../components/WallpaperBackground';
 export const MatchHistoryScreen: React.FC = () => {
   const { theme } = useTheme();
   const { resumeMatch } = useMatch();
@@ -146,10 +149,7 @@ export const MatchHistoryScreen: React.FC = () => {
     if (!hasScores) {
       // Handle matches with no scores yet
       return (
-        <TouchableOpacity
-          style={[styles.matchCard, { backgroundColor: theme.card, borderColor: theme.border }]}
-          onPress={() => openMatchDetail(item)}
-        >
+        <Card onPress={() => openMatchDetail(item)}>
           <View style={styles.matchHeader}>
             <View style={styles.matchInfo}>
               <Text style={[styles.matchDate, { color: theme.text }]}>
@@ -166,7 +166,7 @@ export const MatchHistoryScreen: React.FC = () => {
           <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
             Chưa có điểm số
           </Text>
-        </TouchableOpacity>
+        </Card>
       );
     }
 
@@ -189,10 +189,7 @@ export const MatchHistoryScreen: React.FC = () => {
     })).sort((a, b) => b.score - a.score);
 
     return (
-      <TouchableOpacity
-        style={[styles.matchCard, { backgroundColor: theme.card, borderColor: theme.border }]}
-        onPress={() => openMatchDetail(item)}
-      >
+      <Card onPress={() => openMatchDetail(item)}>
         <View style={styles.matchHeader}>
           <View style={styles.matchInfo}>
             <Text style={[styles.matchDate, { color: theme.text }]}>
@@ -254,7 +251,7 @@ export const MatchHistoryScreen: React.FC = () => {
             </Text>
           </View>
         )}
-      </TouchableOpacity>
+      </Card>
     );
   };
 
@@ -269,7 +266,8 @@ export const MatchHistoryScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <WallpaperBackground>
+      <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>
           {i18n.t('history')}
@@ -320,7 +318,7 @@ export const MatchHistoryScreen: React.FC = () => {
 
           {selectedMatch && (
             <ScrollView contentContainerStyle={styles.modalContent}>
-              <View style={[styles.infoCard, { backgroundColor: theme.card }]}>
+              <Card>
                 <View style={styles.infoRow}>
                   <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} />
                   <Text style={[styles.infoText, { color: theme.text }]}>
@@ -336,23 +334,26 @@ export const MatchHistoryScreen: React.FC = () => {
                     </Text>
                   </View>
                 )}
-
+              </Card>
+              <Card style={{ marginTop: 12 }}>
                 <View style={styles.infoRow}>
                   <Ionicons name="settings-outline" size={20} color={theme.textSecondary} />
                   <Text style={[styles.infoText, { color: theme.text }]}>
                     {selectedMatch.configSnapshot.name}
                   </Text>
                 </View>
-              </View>
+              </Card>
 
               {/* Continue Match Button */}
-              <TouchableOpacity
-                style={[styles.continueButton, { backgroundColor: theme.success }]}
+              <Button
                 onPress={() => handleContinueMatch(selectedMatch)}
+                icon={<Ionicons name="play" size={24} color="#FFF" />}
+                variant="default"
+                size="lg"
+                style={{ marginVertical: 16, backgroundColor: theme.success }}
               >
-                <Ionicons name="play" size={24} color="#FFF" />
-                <Text style={styles.continueButtonText}>Tiếp tục trận đấu</Text>
-              </TouchableOpacity>
+                Tiếp tục trận đấu
+              </Button>
 
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
                 Kết quả cuối cùng
@@ -373,7 +374,7 @@ export const MatchHistoryScreen: React.FC = () => {
                 })
                 .sort((a, b) => b.score - a.score)
                 .map((player, index) => (
-                  <View key={player.playerId} style={[styles.playerScoreCard, { backgroundColor: theme.card }]}>
+                  <Card key={player.playerId} accentColor={player.playerColor || theme.primary} style={{ marginBottom: 8 }}>
                     <View style={styles.playerScoreHeader}>
                       <View style={styles.playerScoreRank}>
                         <View style={[styles.modalPlayerAvatar, { backgroundColor: player.playerColor || getRankColor(index + 1, theme) }]}>
@@ -394,7 +395,7 @@ export const MatchHistoryScreen: React.FC = () => {
                         {player.score > 0 ? '+' : ''}{(player.score ?? 0).toLocaleString('vi-VN')}
                       </Text>
                     </View>
-                  </View>
+                  </Card>
                 ))}
 
               {/* Display rounds if any */}
@@ -404,7 +405,7 @@ export const MatchHistoryScreen: React.FC = () => {
                     Chi tiết các ván ({selectedMatch.rounds.length} ván)
                   </Text>
                   {selectedMatch.rounds.map((round, roundIndex) => (
-                    <View key={round.id} style={[styles.roundCard, { backgroundColor: theme.card }]}>
+                    <Card key={round.id} style={{ marginBottom: 8 }}>
                       <Text style={[styles.roundTitle, { color: theme.text }]}>
                         Ván {round.roundNumber}
                       </Text>
@@ -425,14 +426,14 @@ export const MatchHistoryScreen: React.FC = () => {
                           </View>
                         );
                       })}
-                    </View>
+                    </Card>
                   ))}
                 </>
               )}
 
               {/* Config display based on game type */}
               {selectedMatch.gameType === 'sac_te' ? (
-                <View style={[styles.configCard, { backgroundColor: theme.card }]}>
+                <Card style={{ marginTop: 20 }}>
                   <Text style={[styles.configTitle, { color: theme.text }]}>
                     Cấu hình đã dùng (Sắc Tê)
                   </Text>
@@ -476,9 +477,9 @@ export const MatchHistoryScreen: React.FC = () => {
                       {(selectedMatch.configSnapshot as any).caHeo?.enabled ? `Bật (${(selectedMatch.configSnapshot as any).caHeo.heSo})` : 'Tắt'}
                     </Text>
                   </View>
-                </View>
+                </Card>
               ) : (
-                <View style={[styles.configCard, { backgroundColor: theme.card }]}>
+                <Card style={{ marginTop: 20 }}>
                   <Text style={[styles.configTitle, { color: theme.text }]}>
                     Cấu hình đã dùng (Tiến Lên)
                   </Text>
@@ -506,13 +507,14 @@ export const MatchHistoryScreen: React.FC = () => {
                       ×{(selectedMatch.configSnapshot as any).killMultiplier ?? 'N/A'}
                     </Text>
                   </View>
-                </View>
+                </Card>
               )}
             </ScrollView>
           )}
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </WallpaperBackground>
   );
 };
 

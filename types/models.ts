@@ -74,7 +74,6 @@ export interface ScoringConfig {
     // Chặt heo (user input)
     chatHeoBlack: number;
     chatHeoRed: number;
-    chongHeoMultiplier: number;
 
     // Đút 3 tép (user input)
     dutBaTep: number;

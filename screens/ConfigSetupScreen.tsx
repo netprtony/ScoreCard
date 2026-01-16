@@ -18,7 +18,9 @@ import { getDefaultConfig } from '../services/configService';
 import { createMatch } from '../services/matchService';
 import { getPlayerById } from '../services/playerService';
 import i18n from '../utils/i18n';
-import { showSuccess, showWarning } from '../utils/toast';
+import { showWarning } from '../utils/toast';
+import { Input, Button } from '../components/rn-ui';
+import { Card } from '../components/Card';
 export const ConfigSetupScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
@@ -136,29 +138,31 @@ export const ConfigSetupScreen: React.FC = () => {
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Hệ số cơ bản */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('baseRatio')}</Text>
-          
-          <View style={styles.inputRow}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('ratio1')}(1st vs 4th):</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-              value={config.baseRatioFirst.toString()}
-              onChangeText={(text) => updateConfig('baseRatioFirst', parseInt(text) || 0)}
-              keyboardType="numeric"
-            />
-          </View>
+        <Card style={{ marginBottom: 16 }}>
+          <View style={{ padding: 4 }}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('baseRatio')}</Text>
+            
+            <View style={styles.inputRow}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('ratio1')}(1st vs 4th):</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                value={config.baseRatioFirst.toString()}
+                onChangeText={(text) => updateConfig('baseRatioFirst', parseInt(text) || 0)}
+                keyboardType="numeric"
+              />
+            </View>
 
-          <View style={styles.inputRow}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('ratio2')}(2nd vs 3rd):</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-              value={config.baseRatioSecond.toString()}
-              onChangeText={(text) => updateConfig('baseRatioSecond', parseInt(text) || 0)}
-              keyboardType="numeric"
-            />
+            <View style={styles.inputRow}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('ratio2')}(2nd vs 3rd):</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
+                value={config.baseRatioSecond.toString()}
+                onChangeText={(text) => updateConfig('baseRatioSecond', parseInt(text) || 0)}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
-        </View>
+        </Card>
 
         {/* Tới Trắng */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
