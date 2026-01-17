@@ -74,6 +74,59 @@ export const RoundInputScreen: React.FC = () => {
   // Đút 3 Tép state
   const [dutBaTepTarget, setDutBaTepTarget] = useState<string | null>(null);
 
+  // ============================================
+  // HEO CONSTRAINTS HELPERS
+  // ============================================
+  
+  // Calculate used heo counts from all actions in this round
+  const getUsedHeoCount = (): { den: number; do: number } => {
+    let usedDen = 0;
+    let usedDo = 0;
+    
+    actions.forEach(action => {
+      // From "heo" action type
+      if (action.actionType === 'heo') {
+        if (action.heoType === 'den') usedDen += action.heoCount || 0;
+        if (action.heoType === 'do') usedDo += action.heoCount || 0;
+      }
+      // From "chong" action type
+      if (action.actionType === 'chong' && action.chongCounts) {
+        usedDen += action.chongCounts.heo_den || 0;
+        usedDo += action.chongCounts.heo_do || 0;
+      }
+      // From "giet" action with killedPenalties
+      if (action.actionType === 'giet' && action.killedPenalties) {
+        action.killedPenalties.forEach(p => {
+          if (p.type === 'heo_den') usedDen += p.count;
+          if (p.type === 'heo_do') usedDo += p.count;
+        });
+      }
+    });
+    
+    return { den: usedDen, do: usedDo };
+  };
+
+  // Get remaining heo counts (max 2 each)
+  const getRemainingHeo = (): { den: number; do: number } => {
+    const used = getUsedHeoCount();
+    return {
+      den: Math.max(0, 2 - used.den),
+      do: Math.max(0, 2 - used.do),
+    };
+  };
+
+  // Check if player is killed (has giet action targeting them)
+  const isPlayerKilled = (playerId: string): boolean => {
+    return actions.some(a => a.actionType === 'giet' && a.targetId === playerId);
+  };
+
+  // Get available targets (excluding current player and killed players)
+  const getAvailableTargetsExcludeKilled = (): string[] => {
+    return activeMatch ? activeMatch.playerIds.filter(id => 
+      id !== selectedPlayer && !isPlayerKilled(id)
+    ) : [];
+  };
+
   // Load player data for colors
   useEffect(() => {
     if (activeMatch) {
@@ -284,6 +337,23 @@ export const RoundInputScreen: React.FC = () => {
   const selectPenaltyType = (type: 'heo' | 'chong' | 'giet' | 'dut_ba_tep') => {
     setPenaltyType(type);
     setModalStep(type);
+    
+    // Auto-fill heo counts when entering heo modal
+    if (type === 'heo') {
+      const remaining = getRemainingHeo();
+      // Auto-select type based on availability
+      if (remaining.den > 0) {
+        setHeoType('den');
+        setHeoCount(remaining.den);
+      } else if (remaining.do > 0) {
+        setHeoType('do');
+        setHeoCount(remaining.do);
+      } else {
+        // No heo remaining
+        setHeoType('den');
+        setHeoCount(0);
+      }
+    }
   };
 
   const getAvailableTargets = () => {
@@ -872,32 +942,66 @@ export const RoundInputScreen: React.FC = () => {
               </>
             )}
 
-            {modalStep === 'heo' && (
+            {modalStep === 'heo' && (() => {
+              const remaining = getRemainingHeo();
+              const maxForCurrentType = heoType === 'den' ? remaining.den : remaining.do;
+              const noHeoLeft = remaining.den === 0 && remaining.do === 0;
+              
+              return (
               <ScrollView>
                 <Text style={[styles.modalTitle, { color: theme.text }]}>{i18n.t('heo')}</Text>
+                
+                {noHeoLeft && (
+                  <View style={styles.warningBox}>
+                    <Ionicons name="warning" size={24} color={theme.warning || '#FFA500'} />
+                    <Text style={[styles.warningText, { color: theme.warning || '#FFA500' }]}>
+                      Đã hết heo trong ván này (2 đen, 2 đỏ)
+                    </Text>
+                  </View>
+                )}
                 
                 <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('type')}</Text>
                 <View style={styles.heoTypeRow}>
                   <TouchableOpacity
+                    disabled={remaining.den === 0}
                     style={[
                       styles.heoTypeButton,
-                      { backgroundColor: heoType === 'den' ? '#333' : theme.surface },
+                      { 
+                        backgroundColor: heoType === 'den' ? '#333' : theme.surface,
+                        opacity: remaining.den === 0 ? 0.4 : 1,
+                      },
                     ]}
-                    onPress={() => setHeoType('den')}
+                    onPress={() => {
+                      setHeoType('den');
+                      setHeoCount(Math.min(heoCount, remaining.den));
+                    }}
                   >
                     <Text style={[styles.heoTypeText, { color: heoType === 'den' ? '#FFF' : theme.text }]}>
                       Đen
                     </Text>
+                    <Text style={[styles.remainingBadge, { color: remaining.den === 0 ? '#999' : theme.textSecondary }]}>
+                      {remaining.den}/2
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
+                    disabled={remaining.do === 0}
                     style={[
                       styles.heoTypeButton,
-                      { backgroundColor: heoType === 'do' ? '#DC143C' : theme.surface },
+                      { 
+                        backgroundColor: heoType === 'do' ? '#DC143C' : theme.surface,
+                        opacity: remaining.do === 0 ? 0.4 : 1,
+                      },
                     ]}
-                    onPress={() => setHeoType('do')}
+                    onPress={() => {
+                      setHeoType('do');
+                      setHeoCount(Math.min(heoCount, remaining.do));
+                    }}
                   >
                     <Text style={[styles.heoTypeText, { color: heoType === 'do' ? '#FFF' : theme.text }]}>
                       Đỏ
+                    </Text>
+                    <Text style={[styles.remainingBadge, { color: remaining.do === 0 ? '#999' : theme.textSecondary }]}>
+                      {remaining.do}/2
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -907,41 +1011,50 @@ export const RoundInputScreen: React.FC = () => {
                   <TouchableOpacity
                     style={[styles.counterButton, { backgroundColor: theme.error }]}
                     onPress={() => setHeoCount(Math.max(1, heoCount - 1))}
+                    disabled={heoCount <= 1}
                   >
                     <Ionicons name="remove" size={20} color="#FFF" />
                   </TouchableOpacity>
                   <Text style={[styles.counterValue, { color: theme.text }]}>{heoCount}</Text>
                   <TouchableOpacity
-                    style={[styles.counterButton, { backgroundColor: theme.success }]}
-                    onPress={() => setHeoCount(heoCount + 1)}
+                    style={[styles.counterButton, { backgroundColor: maxForCurrentType <= heoCount ? theme.border : theme.success }]}
+                    onPress={() => setHeoCount(Math.min(heoCount + 1, maxForCurrentType))}
+                    disabled={maxForCurrentType <= heoCount}
                   >
                     <Ionicons name="add" size={20} color="#FFF" />
                   </TouchableOpacity>
                 </View>
 
                 <Text style={[styles.label, { color: theme.textSecondary, marginTop: 16 }]}>Người bị phạt:</Text>
-                {getAvailableTargets().map(targetId => {
+                {activeMatch.playerIds.filter(id => id !== selectedPlayer).map(targetId => {
                   const targetIndex = activeMatch.playerIds.indexOf(targetId);
                   const targetName = activeMatch.playerNames[targetIndex];
+                  const isKilled = isPlayerKilled(targetId);
                   return (
                     <TouchableOpacity
                       key={targetId}
+                      disabled={isKilled}
                       style={[
                         styles.targetButton,
                         {
                           backgroundColor: heoTarget === targetId ? theme.primary : theme.surface,
+                          opacity: isKilled ? 0.5 : 1,
                         },
                       ]}
                       onPress={() => setHeoTarget(targetId)}
                     >
-                      <Text
-                        style={[
-                          styles.targetButtonText,
-                          { color: heoTarget === targetId ? '#FFF' : theme.text },
-                        ]}
-                      >
-                        {targetName}
-                      </Text>
+                      <View style={styles.targetButtonInner}>
+                        {isKilled && <Ionicons name="skull" size={16} color="#999" style={{ marginRight: 8 }} />}
+                        <Text
+                          style={[
+                            styles.targetButtonText,
+                            { color: heoTarget === targetId ? '#FFF' : (isKilled ? '#999' : theme.text) },
+                          ]}
+                        >
+                          {targetName}
+                        </Text>
+                        {isKilled && <Text style={styles.killedBadge}>Đã bị giết</Text>}
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
@@ -954,16 +1067,35 @@ export const RoundInputScreen: React.FC = () => {
                     <Text style={styles.modalButtonText}>Quay lại</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: theme.primary, flex: 1 }]}
+                    style={[styles.modalButton, { backgroundColor: noHeoLeft ? theme.border : theme.primary, flex: 1 }]}
                     onPress={saveAction}
+                    disabled={noHeoLeft}
                   >
                     <Text style={styles.modalButtonText}>Lưu</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
-            )}
+              );
+            })()}
 
-            {modalStep === 'chong' && (
+            {modalStep === 'chong' && (() => {
+              const remaining = getRemainingHeo();
+              
+              // Check if a heo type should be disabled
+              const isHeoTypeDisabled = (type: ChatHeoType): boolean => {
+                if (type === 'heo_den') return remaining.den === 0;
+                if (type === 'heo_do') return remaining.do === 0;
+                return false; // tu_quy, ba_doi_thong are always available
+              };
+              
+              // Get max count for heo types
+              const getMaxForType = (type: ChatHeoType): number => {
+                if (type === 'heo_den') return remaining.den;
+                if (type === 'heo_do') return remaining.do;
+                return 99; // No limit for tu_quy, ba_doi_thong
+              };
+              
+              return (
               <ScrollView>
                 <Text style={[styles.modalTitle, { color: theme.text }]}>Chồng</Text>
                 
@@ -971,32 +1103,46 @@ export const RoundInputScreen: React.FC = () => {
                 {(['heo_den', 'heo_do', 'tu_quy', 'ba_doi_thong'] as ChatHeoType[]).map(type => {
                   const isSelected = chongTypes.includes(type);
                   const count = chongCounts[type] || 1;
+                  const isDisabled = isHeoTypeDisabled(type);
+                  const maxCount = getMaxForType(type);
+                  const isHeoType = type === 'heo_den' || type === 'heo_do';
+                  
                   return (
                     <View key={type} style={styles.chongTypeRow}>
                       <TouchableOpacity
+                        disabled={isDisabled}
                         style={[
                           styles.chongTypeButton,
                           {
                             backgroundColor: isSelected ? theme.primary : theme.surface,
                             flex: 1,
+                            opacity: isDisabled ? 0.4 : 1,
                           },
                         ]}
                         onPress={() => toggleChongType(type)}
                       >
-                        <Text
-                          style={[
-                            styles.chongTypeText,
-                            { color: isSelected ? '#FFF' : theme.text },
-                          ]}
-                        >
-                          {i18n.t(type)}
-                        </Text>
+                        <View style={styles.chongTypeLabelRow}>
+                          <Text
+                            style={[
+                              styles.chongTypeText,
+                              { color: isSelected ? '#FFF' : (isDisabled ? '#999' : theme.text) },
+                            ]}
+                          >
+                            {i18n.t(type)}
+                          </Text>
+                          {isHeoType && (
+                            <Text style={[styles.remainingBadge, { color: isDisabled ? '#999' : theme.textSecondary }]}>
+                              {type === 'heo_den' ? remaining.den : remaining.do}/2
+                            </Text>
+                          )}
+                        </View>
                       </TouchableOpacity>
                       {isSelected && (
                         <View style={styles.chongCountRow}>
                           <TouchableOpacity
                             style={[styles.smallCounterButton, { backgroundColor: theme.error }]}
                             onPress={() => updateChongCount(type, -1)}
+                            disabled={count <= 1}
                           >
                             <Ionicons name="remove" size={16} color="#FFF" />
                           </TouchableOpacity>
@@ -1004,8 +1150,9 @@ export const RoundInputScreen: React.FC = () => {
                             {count}
                           </Text>
                           <TouchableOpacity
-                            style={[styles.smallCounterButton, { backgroundColor: theme.success }]}
+                            style={[styles.smallCounterButton, { backgroundColor: count >= maxCount ? theme.border : theme.success }]}
                             onPress={() => updateChongCount(type, 1)}
+                            disabled={count >= maxCount}
                           >
                             <Ionicons name="add" size={16} color="#FFF" />
                           </TouchableOpacity>
@@ -1018,28 +1165,35 @@ export const RoundInputScreen: React.FC = () => {
                 <Text style={[styles.label, { color: theme.textSecondary, marginTop: 16 }]}>
                   Người bị chồng:
                 </Text>
-                {getAvailableTargets().map(targetId => {
+                {activeMatch.playerIds.filter(id => id !== selectedPlayer).map(targetId => {
                   const targetIndex = activeMatch.playerIds.indexOf(targetId);
                   const targetName = activeMatch.playerNames[targetIndex];
+                  const isKilled = isPlayerKilled(targetId);
                   return (
                     <TouchableOpacity
                       key={targetId}
+                      disabled={isKilled}
                       style={[
                         styles.targetButton,
                         {
                           backgroundColor: chongTarget === targetId ? theme.primary : theme.surface,
+                          opacity: isKilled ? 0.5 : 1,
                         },
                       ]}
                       onPress={() => setChongTarget(targetId)}
                     >
-                      <Text
-                        style={[
-                          styles.targetButtonText,
-                          { color: chongTarget === targetId ? '#FFF' : theme.text },
-                        ]}
-                      >
-                        {targetName}
-                      </Text>
+                      <View style={styles.targetButtonInner}>
+                        {isKilled && <Ionicons name="skull" size={16} color="#999" style={{ marginRight: 8 }} />}
+                        <Text
+                          style={[
+                            styles.targetButtonText,
+                            { color: chongTarget === targetId ? '#FFF' : (isKilled ? '#999' : theme.text) },
+                          ]}
+                        >
+                          {targetName}
+                        </Text>
+                        {isKilled && <Text style={styles.killedBadge}>Đã bị giết</Text>}
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
@@ -1059,7 +1213,8 @@ export const RoundInputScreen: React.FC = () => {
                   </TouchableOpacity>
                 </View>
               </ScrollView>
-            )}
+              );
+            })()}
 
             {/* NEW: Multi-step Giết Modal - Step 1: Select Victim */}
             {modalStep === 'giet_select_victim' && (
@@ -1144,19 +1299,45 @@ export const RoundInputScreen: React.FC = () => {
                   Chọn loại phạt (nếu có):
                 </Text>
                 
-                {config.enablePenalties && (
+                {config.enablePenalties && (() => {
+                  const remaining = getRemainingHeo();
+                  
+                  // Check if penalty type is heo and if it's exhausted
+                  const isHeoTypeDisabled = (type: PenaltyType): boolean => {
+                    if (type === 'heo_den') return remaining.den === 0;
+                    if (type === 'heo_do') return remaining.do === 0;
+                    return false;
+                  };
+                  
+                  const getMaxForType = (type: PenaltyType): number => {
+                    if (type === 'heo_den') return remaining.den;
+                    if (type === 'heo_do') return remaining.do;
+                    return 99;
+                  };
+                  
+                  return (
                   <>
                     {(['heo_den', 'heo_do', 'ba_tep', 'ba_doi_thong', 'tu_quy'] as PenaltyType[]).map(type => {
                       const penalty = currentGietPenalties.find(p => p.type === type);
                       const count = penalty?.count || 0;
                       const coefficient = getPenaltyCoefficient(type);
+                      const isDisabled = isHeoTypeDisabled(type);
+                      const maxCount = getMaxForType(type);
+                      const isHeoType = type === 'heo_den' || type === 'heo_do';
                       
                       return (
-                        <View key={type} style={styles.penaltyRow}>
+                        <View key={type} style={[styles.penaltyRow, isDisabled && { opacity: 0.4 }]}>
                           <View style={{ flex: 1 }}>
-                            <Text style={[styles.penaltyLabel, { color: theme.text }]}>
-                              {i18n.t(type)}
-                            </Text>
+                            <View style={styles.chongTypeLabelRow}>
+                              <Text style={[styles.penaltyLabel, { color: isDisabled ? '#999' : theme.text }]}>
+                                {i18n.t(type)}
+                              </Text>
+                              {isHeoType && (
+                                <Text style={[styles.remainingBadge, { color: isDisabled ? '#999' : theme.textSecondary }]}>
+                                  {type === 'heo_den' ? remaining.den : remaining.do}/2
+                                </Text>
+                              )}
+                            </View>
                             <Text style={[styles.penaltyCoefficient, { color: theme.textSecondary }]}>
                               Hệ số: -{coefficient}
                             </Text>
@@ -1173,8 +1354,9 @@ export const RoundInputScreen: React.FC = () => {
                               {count}
                             </Text>
                             <TouchableOpacity
-                              style={[styles.smallCounterButton, { backgroundColor: theme.success }]}
+                              style={[styles.smallCounterButton, { backgroundColor: (isDisabled || count >= maxCount) ? theme.border : theme.success }]}
                               onPress={() => addCurrentGietPenalty(type)}
+                              disabled={isDisabled || count >= maxCount}
                             >
                               <Ionicons name="add" size={16} color="#FFF" />
                             </TouchableOpacity>
@@ -1183,7 +1365,8 @@ export const RoundInputScreen: React.FC = () => {
                       );
                     })}
                   </>
-                )}
+                  );
+                })()}
 
                 <View style={styles.modalActions}>
                   <TouchableOpacity
@@ -1476,4 +1659,11 @@ const styles = StyleSheet.create({
   confirmTotalValue: { fontSize: 18, fontWeight: 'bold' },
   noPenaltyBox: { alignItems: 'center', paddingVertical: 24 },
   noPenaltyText: { fontSize: 16, marginTop: 8 },
+  // NEW: Heo constraint styles
+  warningBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,165,0,0.15)', padding: 12, borderRadius: 8, marginBottom: 16, gap: 8 },
+  warningText: { fontSize: 14, fontWeight: '500', flex: 1 },
+  remainingBadge: { fontSize: 11, marginTop: 2 },
+  targetButtonInner: { flexDirection: 'row', alignItems: 'center' },
+  killedBadge: { fontSize: 11, color: '#999', marginLeft: 'auto' },
+  chongTypeLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
 });

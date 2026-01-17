@@ -1,9 +1,9 @@
-name: Build Production Release v1.0.4
+name: Build Production Release v1.0.5
 
 on:
   push:
     tags:
-      - 'v1.0.4'
+      - 'v1.0.5'
   workflow_dispatch:
     inputs:
       platform:
@@ -48,10 +48,10 @@ jobs:
 
       - name: 📝 Build Info
         run: |
-          echo "✅ Android production build started for version 1.0.4"
+          echo "✅ Android production build started for version 1.0.5"
           echo "📱 Platform: Android"
           echo "🏗️ Build Type: app-bundle (AAB)"
-          echo "🔗 Check build status at: https://expo.dev/accounts/$(whoami)/projects/KoyaScore/builds"
+          echo "🔗 Check build status at: https://expo.dev"
 
   build-ios:
     name: Build iOS Production
@@ -84,7 +84,7 @@ jobs:
 
       - name: 📝 Build Info
         run: |
-          echo "✅ iOS production build started for version 1.0.4"
+          echo "✅ iOS production build started for version 1.0.5"
           echo "📱 Platform: iOS"
           echo "🏗️ Build Type: Archive"
           echo "🔗 Check build status at: https://expo.dev"
@@ -98,7 +98,7 @@ jobs:
     steps:
       - name: 📢 Summary
         run: |
-          echo "🎉 Production builds for v1.0.4 have been initiated!"
+          echo "🎉 Production builds for v1.0.5 have been initiated!"
           echo ""
           echo "Build Status:"
           echo "- Android: ${{ needs.build-android.result }}"

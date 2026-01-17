@@ -1,4 +1,4 @@
-name: Create Release v1.0.4
+name: Create Release v1.0.5
 
 on:
   workflow_dispatch:
@@ -18,15 +18,20 @@ jobs:
         id: release_notes
         run: |
           cat > release_notes.md << 'EOF'
-          ## 🎉 Koya Score v1.0.4
+          ## 🎉 Koya Score v1.0.5
 
-          ### ✨ Features
-          - Card game score tracking application
-          - Support for multiple game types (Tiến Lên, Sắc Tê)
-          - Multilingual support (Vietnamese, English)
-          - Player management with custom colors
-          - Match history and statistics
-          - Dark mode UI with modern design
+          ### ✨ What's New
+          - **Heo Penalty Constraints**: Maximum 4 heo per round (2 black, 2 red)
+          - **Killed Player Protection**: Players who are killed cannot be penalized again
+          - **Auto-fill Feature**: Automatically fills remaining heo count when opening penalty modal
+          - **UI Improvements**: 
+            - Remaining badges show "1/2", "0/2" for heo types
+            - Skull icon 💀 indicates killed players
+            - Disabled states when heo type is exhausted
+
+          ### 🔧 Bug Fixes
+          - Fixed color picker slider issues in production builds
+          - Improved gesture handling for sliders
 
           ### 📱 Platforms
           - Android: AAB (App Bundle) for Google Play Store
@@ -34,7 +39,7 @@ jobs:
 
           ### 🔧 Technical Details
           - Built with React Native & Expo
-          - Version: 1.0.4
+          - Version: 1.0.5
           - Bundle ID (iOS): com.tienlen.scorecard
           - Package Name (Android): com.tienlen.scorecard
 
@@ -52,22 +57,22 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a v1.0.4 -m "Release version 1.0.4"
-          git push origin v1.0.4
+          git tag -a v1.0.5 -m "Release version 1.0.5"
+          git push origin v1.0.5
 
       - name: 🚀 Create GitHub Release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.0.4
-          release_name: Koya Score v1.0.4
+          tag_name: v1.0.5
+          release_name: Koya Score v1.0.5
           body_path: release_notes.md
           draft: false
           prerelease: false
 
       - name: 📢 Success Message
         run: |
-          echo "✅ Release v1.0.4 created successfully!"
-          echo "🏷️ Tag: v1.0.4"
-          echo "🔗 View release at: https://github.com/${{ github.repository }}/releases/tag/v1.0.4"
+          echo "✅ Release v1.0.5 created successfully!"
+          echo "🏷️ Tag: v1.0.5"
+          echo "🔗 View release at: https://github.com/${{ github.repository }}/releases/tag/v1.0.5"
