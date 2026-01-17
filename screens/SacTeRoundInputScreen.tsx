@@ -643,7 +643,7 @@ export const SacTeRoundInputScreen: React.FC = () => {
 
             <View style={styles.modalFooter}>
               <Button
-                variant="outline"
+                variant="primary"
                 onPress={() => setShowConfigModal(false)}
                 style={{ flex: 1 }}
               >
