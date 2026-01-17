@@ -348,9 +348,9 @@ export const MatchHistoryScreen: React.FC = () => {
               <Button
                 onPress={() => handleContinueMatch(selectedMatch)}
                 icon={<Ionicons name="play" size={24} color="#FFF" />}
-                variant="default"
+                variant="green"
                 size="lg"
-                style={{ marginVertical: 16, backgroundColor: theme.success }}
+                style={{ marginVertical: 16 }}
               >
                 Tiếp tục trận đấu
               </Button>

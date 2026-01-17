@@ -263,9 +263,10 @@ const translations = {
         no_rounds: 'Chưa có ván nào. Nhấn + để bắt đầu!',
         end_match: 'Kết Thúc',
         new_round: 'Nhập Ván Mới',
-
+        display: 'Cấu hình hiển thị'
     },
     en: {
+        display: 'Display',
         penalties: 'Penalties',
         new_round: 'New Round',
         end_match: 'End Match',

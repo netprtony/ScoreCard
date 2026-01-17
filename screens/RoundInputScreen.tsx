@@ -27,7 +27,14 @@ import { showSuccess, showWarning } from '../utils/toast';
 import { Button } from '../components/rn-ui';
 import { WallpaperBackground } from '../components/WallpaperBackground';
 import { Card } from '../components/Card';
-type PenaltyModalStep = 'select_type' | 'heo' | 'chong' | 'giet' | 'dut_ba_tep';
+type PenaltyModalStep = 'select_type' | 'heo' | 'chong' | 'giet' | 'dut_ba_tep' | 'giet_select_victim' | 'giet_select_penalty' | 'giet_confirm_penalty';
+
+// Type for tracking victim penalties in multi-kill flow
+interface GietVictimData {
+  targetId: string;
+  penalties: { type: PenaltyType; count: number }[];
+  completed: boolean;
+}
 
 export const RoundInputScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -55,9 +62,14 @@ export const RoundInputScreen: React.FC = () => {
   const [chongCounts, setChongCounts] = useState<{ [key in ChatHeoType]?: number }>({});
   const [chongTarget, setChongTarget] = useState<string | null>(null);
   
-  // Giết state
+  // Giết state (legacy - for single kill)
   const [gietTarget, setGietTarget] = useState<string | null>(null);
   const [gietPenalties, setGietPenalties] = useState<{ type: PenaltyType; count: number }[]>([]);
+
+  // NEW: Multi-kill flow state
+  const [gietVictims, setGietVictims] = useState<GietVictimData[]>([]);
+  const [currentGietVictim, setCurrentGietVictim] = useState<string | null>(null);
+  const [currentGietPenalties, setCurrentGietPenalties] = useState<{ type: PenaltyType; count: number }[]>([]);
 
   // Đút 3 Tép state
   const [dutBaTepTarget, setDutBaTepTarget] = useState<string | null>(null);
@@ -263,6 +275,10 @@ export const RoundInputScreen: React.FC = () => {
     setGietTarget(null);
     setGietPenalties([]);
     setDutBaTepTarget(null);
+    // Reset multi-kill flow state
+    setGietVictims([]);
+    setCurrentGietVictim(null);
+    setCurrentGietPenalties([]);
   };
 
   const selectPenaltyType = (type: 'heo' | 'chong' | 'giet' | 'dut_ba_tep') => {
@@ -277,9 +293,139 @@ export const RoundInputScreen: React.FC = () => {
 
   const openGietModal = (playerId: string) => {
     setSelectedPlayer(playerId);
-    setModalStep('giet');
+    setModalStep('giet_select_victim');
     setPenaltyType('giet');
+    setGietVictims([]);
+    setCurrentGietVictim(null);
+    setCurrentGietPenalties([]);
     setShowPenaltyModal(true);
+  };
+
+  // NEW: Helper to get player name by ID
+  const getPlayerName = (playerId: string): string => {
+    const index = activeMatch.playerIds.indexOf(playerId);
+    return index >= 0 ? activeMatch.playerNames[index] : 'Unknown';
+  };
+
+  // NEW: Select victim for penalty assignment
+  const selectGietVictim = (victimId: string) => {
+    setCurrentGietVictim(victimId);
+    // Load existing penalties if victim was already selected
+    const existing = gietVictims.find(v => v.targetId === victimId);
+    setCurrentGietPenalties(existing?.penalties || []);
+    setModalStep('giet_select_penalty');
+  };
+
+  // NEW: Add penalty for current victim
+  const addCurrentGietPenalty = (type: PenaltyType) => {
+    const existing = currentGietPenalties.find(p => p.type === type);
+    if (existing) {
+      setCurrentGietPenalties(currentGietPenalties.map(p => 
+        p.type === type ? { ...p, count: p.count + 1 } : p
+      ));
+    } else {
+      setCurrentGietPenalties([...currentGietPenalties, { type, count: 1 }]);
+    }
+  };
+
+  // NEW: Remove penalty for current victim
+  const removeCurrentGietPenalty = (type: PenaltyType) => {
+    const existing = currentGietPenalties.find(p => p.type === type);
+    if (existing && existing.count > 1) {
+      setCurrentGietPenalties(currentGietPenalties.map(p => 
+        p.type === type ? { ...p, count: p.count - 1 } : p
+      ));
+    } else {
+      setCurrentGietPenalties(currentGietPenalties.filter(p => p.type !== type));
+    }
+  };
+
+  // NEW: Show confirmation modal with penalty coefficients
+  const confirmCurrentGietPenalty = () => {
+    setModalStep('giet_confirm_penalty');
+  };
+
+  // NEW: Save current victim penalty and return to victim list
+  const saveCurrentVictimPenalty = () => {
+    if (!currentGietVictim) return;
+    
+    const existingIndex = gietVictims.findIndex(v => v.targetId === currentGietVictim);
+    if (existingIndex >= 0) {
+      // Update existing
+      const updated = [...gietVictims];
+      updated[existingIndex] = {
+        targetId: currentGietVictim,
+        penalties: currentGietPenalties,
+        completed: true,
+      };
+      setGietVictims(updated);
+    } else {
+      // Add new
+      setGietVictims([...gietVictims, {
+        targetId: currentGietVictim,
+        penalties: currentGietPenalties,
+        completed: true,
+      }]);
+    }
+    
+    setCurrentGietVictim(null);
+    setCurrentGietPenalties([]);
+    setModalStep('giet_select_victim');
+  };
+
+  // NEW: Get penalty coefficient from config
+  const getPenaltyCoefficient = (type: PenaltyType): number => {
+    switch (type) {
+      case 'heo_den': return config.penaltyHeoDen;
+      case 'heo_do': return config.penaltyHeoDo;
+      case 'ba_tep': return config.penaltyBaTep;
+      case 'ba_doi_thong': return config.penaltyBaDoiThong;
+      case 'tu_quy': return config.penaltyTuQuy;
+      default: return 0;
+    }
+  };
+
+  // NEW: Save all kills from multi-kill flow
+  const saveAllGietActions = () => {
+    if (!selectedPlayer || gietVictims.length === 0) {
+      showWarning('Lỗi', 'Vui lòng chọn ít nhất một người bị giết');
+      return;
+    }
+
+    const newActions: PlayerAction[] = [];
+    const newRankings = { ...rankings };
+
+    gietVictims.forEach(victim => {
+      const newAction: PlayerAction = {
+        id: `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        roundId: '',
+        actionType: 'giet',
+        actorId: selectedPlayer,
+        targetId: victim.targetId,
+        killedPenalties: victim.penalties,
+        createdAt: Date.now(),
+      };
+      newActions.push(newAction);
+      newRankings[victim.targetId] = 4;
+    });
+
+    // Handle double/triple kill rankings
+    const rank4Players = Object.entries(newRankings).filter(([, r]) => r === 4);
+    if (rank4Players.length === 2) {
+      const killedPlayerIds = rank4Players.map(([id]) => id);
+      const remainingPlayer = activeMatch.playerIds.find(
+        id => id !== selectedPlayer && !killedPlayerIds.includes(id)
+      );
+      if (remainingPlayer) {
+        newRankings[remainingPlayer] = 2;
+        showSuccess('Tự động xếp hạng', 'Đã xếp hạng 2 cho người chơi còn lại');
+      }
+    }
+
+    setRankings(newRankings);
+    setActions([...actions, ...newActions]);
+    closePenaltyModal();
+    showSuccess('Thành công', `Đã thêm ${gietVictims.length} giết + phạt`);
   };
 
   const toggleChongType = (type: ChatHeoType) => {
@@ -915,6 +1061,203 @@ export const RoundInputScreen: React.FC = () => {
               </ScrollView>
             )}
 
+            {/* NEW: Multi-step Giết Modal - Step 1: Select Victim */}
+            {modalStep === 'giet_select_victim' && (
+              <ScrollView>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Chọn người bị giết</Text>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>
+                  Chọn nạn nhân để thêm phạt:
+                </Text>
+                
+                {getAvailableTargets().map(targetId => {
+                  const targetName = getPlayerName(targetId);
+                  const victimData = gietVictims.find(v => v.targetId === targetId);
+                  const isCompleted = victimData?.completed || false;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={targetId}
+                      style={[
+                        styles.targetButton,
+                        {
+                          backgroundColor: isCompleted ? theme.success : theme.surface,
+                          opacity: isCompleted ? 0.8 : 1,
+                        },
+                      ]}
+                      onPress={() => selectGietVictim(targetId)}
+                    >
+                      <View style={styles.victimButtonContent}>
+                        {isCompleted && (
+                          <Ionicons name="checkmark-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                        )}
+                        <Text
+                          style={[
+                            styles.targetButtonText,
+                            { color: isCompleted ? '#FFF' : theme.text, flex: 1 },
+                          ]}
+                        >
+                          {targetName}
+                        </Text>
+                        {isCompleted && victimData?.penalties && victimData.penalties.length > 0 && (
+                          <Text style={[styles.penaltyBadge, { color: '#FFF' }]}>
+                            +{victimData.penalties.reduce((sum, p) => sum + p.count, 0)} phạt
+                          </Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.border, flex: 1, marginRight: 8 }]}
+                    onPress={closePenaltyModal}
+                  >
+                    <Text style={styles.modalButtonText}>Quay lại</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.modalButton, 
+                      { 
+                        backgroundColor: gietVictims.length > 0 ? theme.primary : theme.border, 
+                        flex: 1,
+                        opacity: gietVictims.length > 0 ? 1 : 0.5,
+                      }
+                    ]}
+                    onPress={saveAllGietActions}
+                    disabled={gietVictims.length === 0}
+                  >
+                    <Text style={styles.modalButtonText}>Lưu ({gietVictims.length})</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+
+            {/* NEW: Multi-step Giết Modal - Step 2: Select Penalties */}
+            {modalStep === 'giet_select_penalty' && currentGietVictim && (
+              <ScrollView>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>
+                  Phạt thêm cho {getPlayerName(currentGietVictim)}
+                </Text>
+                
+                <Text style={[styles.label, { color: theme.textSecondary }]}>
+                  Chọn loại phạt (nếu có):
+                </Text>
+                
+                {config.enablePenalties && (
+                  <>
+                    {(['heo_den', 'heo_do', 'ba_tep', 'ba_doi_thong', 'tu_quy'] as PenaltyType[]).map(type => {
+                      const penalty = currentGietPenalties.find(p => p.type === type);
+                      const count = penalty?.count || 0;
+                      const coefficient = getPenaltyCoefficient(type);
+                      
+                      return (
+                        <View key={type} style={styles.penaltyRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.penaltyLabel, { color: theme.text }]}>
+                              {i18n.t(type)}
+                            </Text>
+                            <Text style={[styles.penaltyCoefficient, { color: theme.textSecondary }]}>
+                              Hệ số: -{coefficient}
+                            </Text>
+                          </View>
+                          <View style={styles.penaltyCountRow}>
+                            <TouchableOpacity
+                              style={[styles.smallCounterButton, { backgroundColor: count > 0 ? theme.error : theme.border }]}
+                              onPress={() => removeCurrentGietPenalty(type)}
+                              disabled={count === 0}
+                            >
+                              <Ionicons name="remove" size={16} color="#FFF" />
+                            </TouchableOpacity>
+                            <Text style={[styles.smallCounterValue, { color: theme.text }]}>
+                              {count}
+                            </Text>
+                            <TouchableOpacity
+                              style={[styles.smallCounterButton, { backgroundColor: theme.success }]}
+                              onPress={() => addCurrentGietPenalty(type)}
+                            >
+                              <Ionicons name="add" size={16} color="#FFF" />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </>
+                )}
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.border, flex: 1, marginRight: 8 }]}
+                    onPress={() => setModalStep('giet_select_victim')}
+                  >
+                    <Text style={styles.modalButtonText}>Thoát</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.primary, flex: 1 }]}
+                    onPress={confirmCurrentGietPenalty}
+                  >
+                    <Text style={styles.modalButtonText}>Lưu phạt</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+
+            {/* NEW: Multi-step Giết Modal - Step 3: Confirm Penalties */}
+            {modalStep === 'giet_confirm_penalty' && currentGietVictim && (
+              <ScrollView>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>
+                  Xác nhận phạt cho {getPlayerName(currentGietVictim)}
+                </Text>
+                
+                {currentGietPenalties.length > 0 ? (
+                  <>
+                    <View style={styles.confirmPenaltyList}>
+                      {currentGietPenalties.map(penalty => {
+                        const coefficient = getPenaltyCoefficient(penalty.type);
+                        const totalPoints = coefficient * penalty.count;
+                        return (
+                          <View key={penalty.type} style={styles.confirmPenaltyItem}>
+                            <Text style={[styles.confirmPenaltyName, { color: theme.text }]}>
+                              {i18n.t(penalty.type)}
+                            </Text>
+                            <Text style={[styles.confirmPenaltyDetails, { color: theme.textSecondary }]}>
+                              x{penalty.count} = -{totalPoints} điểm
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                    
+                    <View style={[styles.confirmTotalRow, { borderTopColor: theme.border }]}>
+                      <Text style={[styles.confirmTotalLabel, { color: theme.text }]}>
+                        Tổng phạt thêm:
+                      </Text>
+                      <Text style={[styles.confirmTotalValue, { color: theme.error }]}>
+                        -{currentGietPenalties.reduce((sum, p) => sum + getPenaltyCoefficient(p.type) * p.count, 0)} điểm
+                      </Text>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.noPenaltyBox}>
+                    <Ionicons name="checkmark-circle-outline" size={48} color={theme.success} />
+                    <Text style={[styles.noPenaltyText, { color: theme.textSecondary }]}>
+                      Không có phạt thêm
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.primary, flex: 1 }]}
+                    onPress={saveCurrentVictimPenalty}
+                  >
+                    <Text style={styles.modalButtonText}>OK</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+
+            {/* Legacy giet modal - kept for backwards compatibility */}
             {modalStep === 'giet' && (
               <ScrollView>
                 <Text style={[styles.modalTitle, { color: theme.text }]}>{i18n.t('kill')}</Text>
@@ -1120,4 +1463,17 @@ const styles = StyleSheet.create({
   actionListText: { fontSize: 14, fontWeight: '500' },
   actionListDetails: { fontSize: 12, marginTop: 2 },
   actionDeleteButton: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  // NEW: Multi-kill flow styles
+  victimButtonContent: { flexDirection: 'row', alignItems: 'center' },
+  penaltyBadge: { fontSize: 12, fontWeight: '500' },
+  penaltyCoefficient: { fontSize: 12, marginTop: 2 },
+  confirmPenaltyList: { marginVertical: 12 },
+  confirmPenaltyItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, marginBottom: 8, backgroundColor: 'rgba(0,0,0,0.1)' },
+  confirmPenaltyName: { fontSize: 14, fontWeight: '600' },
+  confirmPenaltyDetails: { fontSize: 14 },
+  confirmTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginTop: 8, borderTopWidth: 1 },
+  confirmTotalLabel: { fontSize: 16, fontWeight: '600' },
+  confirmTotalValue: { fontSize: 18, fontWeight: 'bold' },
+  noPenaltyBox: { alignItems: 'center', paddingVertical: 24 },
+  noPenaltyText: { fontSize: 16, marginTop: 8 },
 });

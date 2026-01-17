@@ -369,6 +369,7 @@ export const PlayerListScreen: React.FC = () => {
             onEdit={() => openEditModal(item)}
             onDelete={() => handleDeletePlayer(item)}
             showActions
+            blurIntensity={100}
           />
         )}
         contentContainerStyle={styles.list}
@@ -420,7 +421,7 @@ export const PlayerListScreen: React.FC = () => {
 
         <DialogFooter>
           <Button
-            variant="outline"
+            variant="secondary"
             onPress={() => {
               setPlayerName('');
               setSelectedAvatar(undefined);
@@ -469,7 +470,7 @@ export const PlayerListScreen: React.FC = () => {
 
         <DialogFooter>
           <Button
-            variant="outline"
+            variant="secondary"
             onPress={() => {
               setPlayerName('');
               setSelectedAvatar(undefined);

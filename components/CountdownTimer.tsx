@@ -7,6 +7,7 @@ import i18n from '../utils/i18n';
 
 interface CountdownTimerProps {
   onTimeUp?: () => void;
+  initialEnabled?: boolean;
 }
 
 const DURATION_OPTIONS = [
@@ -19,9 +20,9 @@ const DURATION_OPTIONS = [
   { label: '30 phút', value: 1800 },
 ];
 
-export const CountdownTimer: React.FC<CountdownTimerProps> = ({ onTimeUp }) => {
+export const CountdownTimer: React.FC<CountdownTimerProps> = ({ onTimeUp, initialEnabled = false }) => {
   const { theme } = useTheme();
-  const [isEnabled, setIsEnabled] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(initialEnabled);
   const [isRunning, setIsRunning] = useState(false);
   const [duration, setDuration] = useState(300); // Default 5 minutes
   const [remaining, setRemaining] = useState(300);
@@ -108,20 +109,6 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({ onTimeUp }) => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (!isEnabled) {
-    return (
-      <TouchableOpacity
-        style={[styles.compactButton, { backgroundColor: theme.surface }]}
-        onPress={toggleTimer}
-      >
-        <Ionicons name="timer-outline" size={20} color={theme.text} />
-        <Text style={[styles.compactText, { color: theme.text }]}>
-          {i18n.t('timer')}
-        </Text>
-      </TouchableOpacity>
-    );
-  }
-
   return (
     <View style={[styles.container, { backgroundColor: theme.surface }]}>
       <TouchableOpacity onPress={() => setShowDurationPicker(true)}>
@@ -147,13 +134,6 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({ onTimeUp }) => {
           onPress={resetTimer}
         >
           <Ionicons name="refresh" size={20} color="#FFF" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: theme.error }]}
-          onPress={toggleTimer}
-        >
-          <Ionicons name="close" size={20} color="#FFF" />
         </TouchableOpacity>
       </View>
 

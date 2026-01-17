@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   SafeAreaView,
   ScrollView,
   Image,
@@ -14,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import i18n from '../utils/i18n';
+import { Button } from '../components/rn-ui/Button';
 
 const { width, height } = Dimensions.get('window');
 
@@ -146,14 +146,14 @@ export const WelcomeScreen: React.FC = () => {
 
         {/* Continue Button */}
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.button}
+          <Button
+            label={currentSlide < 1 ? i18n.t('continue') : i18n.t('getStarted')}
             onPress={handleContinue}
-          >
-            <Text style={styles.buttonText}>
-              {currentSlide < 1 ? i18n.t('continue') : i18n.t('getStarted')}
-            </Text>
-          </TouchableOpacity>
+            shape="pill"
+            size="lg"
+            variant="primary"
+            style={styles.button}
+          />
         </View>
       </SafeAreaView>
     </View>
@@ -285,19 +285,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   button: {
-    padding: 18,
-    borderRadius: 12,
-    alignItems: 'center',
     backgroundColor: '#FFD700',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  buttonText: {
-    color: '#000000',
-    fontSize: 17,
-    fontWeight: '700',
   },
 });

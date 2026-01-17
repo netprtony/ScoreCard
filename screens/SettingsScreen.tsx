@@ -491,7 +491,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 20,
+    padding: 16,
+    paddingHorizontal: 20,
     paddingBottom: 12,
   },
   title: {
@@ -500,12 +501,13 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+    marginHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 8,
   },
   card: {
     marginHorizontal: 20,

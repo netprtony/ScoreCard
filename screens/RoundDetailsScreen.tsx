@@ -55,20 +55,41 @@ export const RoundDetailsScreen: React.FC = () => {
     setExpandedActionId(expandedActionId === actionId ? null : actionId);
   };
 
-  // Calculate score breakdown for an action
-  const getActionScoreBreakdown = (actionId: string): { playerId: string; playerName: string; score: number }[] => {
+  // Calculate score breakdown for an action (only actor and target)
+  const getActionScoreBreakdown = (actionId: string): { playerId: string; playerName: string; score: number; formula: string }[] => {
+    const config = match.configSnapshot;
+    
     if (actionId === 'toi-trang' && round.toiTrangWinner) {
       // Tới Trắng: winner gets positive, others split negative
+      const winnerIndex = match.playerIds.indexOf(round.toiTrangWinner);
+      const winnerName = match.playerNames[winnerIndex];
       const winnerScore = round.roundScores[round.toiTrangWinner] || 0;
-      const totalLoss = -winnerScore;
+      const multiplier = (config as any).toiTrangMultiplier || 2;
       const losersCount = match.playerIds.length - 1;
-      const lossPerPlayer = losersCount > 0 ? Math.floor(totalLoss / losersCount) : 0;
+      const lossPerPlayer = losersCount > 0 ? Math.floor(Math.abs(winnerScore) / losersCount) : 0;
       
-      return match.playerIds.map((id, idx) => ({
-        playerId: id,
-        playerName: match.playerNames[idx],
-        score: id === round.toiTrangWinner ? winnerScore : -lossPerPlayer,
-      }));
+      const breakdown = [
+        {
+          playerId: round.toiTrangWinner,
+          playerName: winnerName,
+          score: winnerScore,
+          formula: `Tới trắng x${multiplier} = +${winnerScore}`,
+        },
+      ];
+      
+      // Add losers
+      match.playerIds.forEach((id, idx) => {
+        if (id !== round.toiTrangWinner) {
+          breakdown.push({
+            playerId: id,
+            playerName: match.playerNames[idx],
+            score: -lossPerPlayer,
+            formula: `Bị tới trắng = -${lossPerPlayer}`,
+          });
+        }
+      });
+      
+      return breakdown;
     }
     
     // For other actions, find the action and calculate
@@ -76,50 +97,117 @@ export const RoundDetailsScreen: React.FC = () => {
     const action = round.actions[actionIndex];
     if (!action) return [];
     
-    const config = match.configSnapshot;
-    const breakdown: { playerId: string; playerName: string; score: number }[] = [];
+    const actorIndex = match.playerIds.indexOf(action.actorId);
+    const actorName = match.playerNames[actorIndex];
+    const targetIndex = action.targetId ? match.playerIds.indexOf(action.targetId) : -1;
+    const targetName = targetIndex >= 0 ? match.playerNames[targetIndex] : '';
     
-    match.playerIds.forEach((id, idx) => {
-      let score = 0;
-      
-      if (action.actionType === 'heo') {
-        // Chặt Heo: actor gains, target loses
-        const penaltyValue = action.heoType === 'den' ? config.chatHeoBlack : config.chatHeoRed;
-        const totalPenalty = penaltyValue * (action.heoCount || 1);
-        
-        if (id === action.actorId) score = totalPenalty;
-        else if (id === action.targetId) score = -totalPenalty;
-      } else if (action.actionType === 'chong') {
-        // Chồng: actor gains, target loses
-        let totalPenalty = 0;
-        action.chongTypes?.forEach(type => {
-          const count = action.chongCounts?.[type] || 1;
-          const baseValue = type === 'heo_den' ? config.penaltyHeoDen : 
-                           type === 'heo_do' ? config.penaltyHeoDo :
-                           type === 'ba_doi_thong' ? config.penaltyBaDoiThong :
-                           type === 'tu_quy' ? config.penaltyTuQuy : 0;
-          totalPenalty += baseValue * count;
-        });
-        
-        if (id === action.actorId) score = totalPenalty;
-        else if (id === action.targetId) score = -totalPenalty;
-      } else if (action.actionType === 'dut_ba_tep') {
-        const penalty = config.penaltyBaTep || 0;
-        if (id === action.actorId) score = penalty;
-        else if (id === action.targetId) score = -penalty;
-      } else if (action.actionType === 'giet') {
-        // Giết: more complex, use round scores
-        score = round.roundScores[id] || 0;
-      }
+    const breakdown: { playerId: string; playerName: string; score: number; formula: string }[] = [];
+    
+    if (action.actionType === 'heo') {
+      // Chặt Heo
+      const penaltyValue = action.heoType === 'den' ? config.chatHeoBlack : config.chatHeoRed;
+      const heoCount = action.heoCount || 1;
+      const totalPenalty = penaltyValue * heoCount;
+      const heoLabel = action.heoType === 'den' ? 'Heo đen' : 'Heo đỏ';
       
       breakdown.push({
-        playerId: id,
-        playerName: match.playerNames[idx],
-        score,
+        playerId: action.actorId,
+        playerName: actorName,
+        score: totalPenalty,
+        formula: `${heoLabel} x${heoCount}: ${penaltyValue} x ${heoCount} = +${totalPenalty}`,
       });
-    });
+      
+      if (action.targetId) {
+        breakdown.push({
+          playerId: action.targetId,
+          playerName: targetName,
+          score: -totalPenalty,
+          formula: `${heoLabel} x${heoCount}: -${penaltyValue} x ${heoCount} = -${totalPenalty}`,
+        });
+      }
+    } else if (action.actionType === 'chong') {
+      // Chồng
+      const components: { label: string; value: number }[] = [];
+      let totalPenalty = 0;
+      
+      action.chongTypes?.forEach(type => {
+        const count = action.chongCounts?.[type] || 1;
+        const baseValue = type === 'heo_den' ? config.penaltyHeoDen : 
+                         type === 'heo_do' ? config.penaltyHeoDo :
+                         type === 'ba_doi_thong' ? config.penaltyBaDoiThong :
+                         type === 'tu_quy' ? config.penaltyTuQuy : 0;
+        const value = baseValue * count;
+        totalPenalty += value;
+        
+        const label = type === 'heo_den' ? 'Heo đen' :
+                      type === 'heo_do' ? 'Heo đỏ' :
+                      type === 'ba_doi_thong' ? '3 đôi thông' :
+                      type === 'tu_quy' ? 'Tứ quý' : type;
+        components.push({ label: count > 1 ? `${label} x${count}` : label, value });
+      });
+      
+      const formulaPositive = components.map(c => `${c.value}`).join(' + ') + ` = +${totalPenalty}`;
+      const formulaNegative = components.map(c => `-${c.value}`).join(' + ') + ` = -${totalPenalty}`;
+      const chongLabel = components.map(c => c.label).join(' + ');
+      
+      breakdown.push({
+        playerId: action.actorId,
+        playerName: actorName,
+        score: totalPenalty,
+        formula: `${chongLabel}: ${formulaPositive}`,
+      });
+      
+      if (action.targetId) {
+        breakdown.push({
+          playerId: action.targetId,
+          playerName: targetName,
+          score: -totalPenalty,
+          formula: `${chongLabel}: ${formulaNegative}`,
+        });
+      }
+    } else if (action.actionType === 'dut_ba_tep') {
+      const penalty = (config as any).penaltyBaTep || 0;
+      
+      breakdown.push({
+        playerId: action.actorId,
+        playerName: actorName,
+        score: penalty,
+        formula: `Đút 3 tép: +${penalty}`,
+      });
+      
+      if (action.targetId) {
+        breakdown.push({
+          playerId: action.targetId,
+          playerName: targetName,
+          score: -penalty,
+          formula: `Bị đút 3 tép: -${penalty}`,
+        });
+      }
+    } else if (action.actionType === 'giet') {
+      // Giết: show actor and target with calculation
+      const ratio = config.baseRatioFirst;
+      const actorScore = round.roundScores[action.actorId] || 0;
+      const targetScore = action.targetId ? (round.roundScores[action.targetId] || 0) : 0;
+      
+      breakdown.push({
+        playerId: action.actorId,
+        playerName: actorName,
+        score: actorScore,
+        formula: `Giết: Hệ số ${ratio} = ${actorScore >= 0 ? '+' : ''}${actorScore}`,
+      });
+      
+      if (action.targetId) {
+        breakdown.push({
+          playerId: action.targetId,
+          playerName: targetName,
+          score: targetScore,
+          formula: `Bị giết = ${targetScore >= 0 ? '+' : ''}${targetScore}`,
+        });
+      }
+    }
     
-    return breakdown.filter(b => b.score !== 0);
+    return breakdown;
   };
 
   const handleSave = () => {
@@ -243,7 +331,12 @@ export const RoundDetailsScreen: React.FC = () => {
                       <View style={[styles.breakdownContainer, { backgroundColor: theme.background }]}>
                         {breakdown.map(item => (
                           <View key={item.playerId} style={styles.breakdownRow}>
-                            <Text style={[styles.breakdownName, { color: theme.text }]}>{item.playerName}</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text style={[styles.breakdownName, { color: theme.text }]}>{item.playerName}</Text>
+                              <Text style={[styles.breakdownFormula, { color: theme.textSecondary }]}>
+                                {item.formula}
+                              </Text>
+                            </View>
                             <Text style={[styles.breakdownScore, { color: item.score >= 0 ? '#4CAF50' : '#F44336' }]}>
                               {item.score >= 0 ? `+${item.score}` : item.score}
                             </Text>
@@ -306,7 +399,12 @@ export const RoundDetailsScreen: React.FC = () => {
                       <View style={[styles.breakdownContainer, { backgroundColor: theme.background }]}>
                         {breakdown.map(item => (
                           <View key={item.playerId} style={styles.breakdownRow}>
-                            <Text style={[styles.breakdownName, { color: theme.text }]}>{item.playerName}</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text style={[styles.breakdownName, { color: theme.text }]}>{item.playerName}</Text>
+                              <Text style={[styles.breakdownFormula, { color: theme.textSecondary }]}>
+                                {item.formula}
+                              </Text>
+                            </View>
                             <Text style={[styles.breakdownScore, { color: item.score >= 0 ? '#4CAF50' : '#F44336' }]}>
                               {item.score >= 0 ? `+${item.score}` : item.score}
                             </Text>
@@ -430,7 +528,31 @@ export const RoundDetailsScreen: React.FC = () => {
             </ScrollView>
           </Card>
         )}
-
+        <Card style={{ margin: 16 }}>
+          <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 12 }]}>
+            📝 {i18n.t('totalScoreChange')}
+          </Text>
+          
+          <View style={styles.scoreGrid}>
+            {match.playerIds.map((playerId, index) => {
+              const playerName = match.playerNames[index];
+              return (
+                <View key={playerId} style={styles.scoreColumn}>
+                  <Text style={[styles.compactPlayerLabel, { color: theme.text }]} numberOfLines={1}>
+                    {playerName}
+                  </Text>
+                  <TextInput
+                    style={[styles.compactScoreInput, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
+                    value={editedScores[playerId] || '0'}
+                    onChangeText={(text) => setEditedScores({ ...editedScores, [playerId]: text })}
+                    keyboardType="numeric"
+                    selectTextOnFocus
+                  />
+                </View>
+              );
+            })}
+          </View>
+        </Card>
         {/* Rank Results Section */}
         <Card style={{ margin: 16 }}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -503,26 +625,7 @@ export const RoundDetailsScreen: React.FC = () => {
         </Card>
 
         {/* Scores Section */}
-        <Card style={{ margin: 16 }}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            📝 {i18n.t('totalScoreChange')}
-          </Text>
-          
-          {match.playerIds.map((playerId, index) => {
-            const playerName = match.playerNames[index];
-            return (
-              <View key={playerId} style={styles.scoreInputRow}>
-                <Text style={[styles.playerLabel, { color: theme.text }]}>{playerName}:</Text>
-                <TextInput
-                  style={[styles.scoreInput, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
-                  value={editedScores[playerId] || '0'}
-                  onChangeText={(text) => setEditedScores({ ...editedScores, [playerId]: text })}
-                  keyboardType="numeric"
-                />
-              </View>
-            );
-          })}
-        </Card>
+        
       </ScrollView>
 
       {/* Save Button */}
@@ -630,8 +733,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  breakdownFormula: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
   breakdownScore: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   rankResultRow: {
@@ -688,22 +796,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  scoreInputRow: {
+  scoreGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    gap: 8,
   },
-  playerLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+  scoreColumn: {
     flex: 1,
+    alignItems: 'center',
   },
-  scoreInput: {
-    width: 100,
-    padding: 12,
+  compactPlayerLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+    textAlign: 'center',
+    width: '100%',
+  },
+  compactScoreInput: {
+    width: '100%',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     borderRadius: 8,
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: 'bold',
     textAlign: 'center',
     borderWidth: 1,
   },

@@ -30,6 +30,7 @@ export const ActiveMatchScreen: React.FC = () => {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editedConfig, setEditedConfig] = useState<ScoringConfig | null>(null);
   const [showOngoingModal, setShowOngoingModal] = useState(false);
+  const [showTimer, setShowTimer] = useState(false);
 
   const handleAddRound = () => {
     if (activeMatch?.gameType === 'sac_te') {
@@ -152,6 +153,10 @@ export const ActiveMatchScreen: React.FC = () => {
     showSuccess('Đã tiếp tục trận đấu');
   };
 
+  const handleEditTimer = () => {
+    setShowTimer(!showTimer);
+  };
+
   // Get paused matches (excluding current active)
   const pausedMatches = ongoingMatches.filter(m => m.status === 'paused');
 
@@ -217,27 +222,13 @@ export const ActiveMatchScreen: React.FC = () => {
             {pausedMatches.length > 0 && ` • ${pausedMatches.length} ${i18n.t('paused_matches')}`}
           </Text>
         </View>
-        <TouchableOpacity
-          style={[styles.iconButton, { backgroundColor: theme.warning, marginRight: 8 }]}
-          onPress={handlePauseMatch}
-        >
-          <Ionicons name="pause" size={24} color="#FFF" />
-        </TouchableOpacity>
-        {activeMatch.gameType !== 'sac_te' && (
-          <TouchableOpacity
-            style={[styles.iconButton, { backgroundColor: theme.surface }]}
-            onPress={handleEditConfig}
-          >
-            <Ionicons name="settings-outline" size={24} color={theme.text} />
-          </TouchableOpacity>
-        )}
+        
+       
       </View>
 
-      {/* Countdown Timer */}
-      <View style={styles.timerContainer}>
-        <CountdownTimer />
+      <View style={[styles.timerContainer, { display: showTimer ? 'flex' : 'none' }]}>
+        <CountdownTimer initialEnabled={true} />
       </View>
-
       {/* Score Table */}
       <View style={styles.tableContainer}>
         <Text style={[styles.tableTitle, { color: theme.text, paddingHorizontal: 20 }]}>{i18n.t('score_table')}</Text>
@@ -290,21 +281,52 @@ export const ActiveMatchScreen: React.FC = () => {
       {/* Action Buttons */}
       <View style={[styles.buttonContainer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
         <Button
-          variant="destructive"
+          shape = "pill"
+          size = "md"
+          variant="secondary"
           onPress={handleEndMatch}
-          icon={<Ionicons name="stop-circle-outline" size={24} color="#FFF" />}
+          icon={<Ionicons name="stop-circle-outline" size={24} color='#ff0000ff' />}
           style={{ flex: 1 }}
         >
           {i18n.t('end_match')}
         </Button>
 
+       
         <Button
+          icon={<Ionicons name="pause" size={20} color= '#ffffffff' />}
+          shape="circle"
+          size="md"
+          variant="primary"
+          onPress={handlePauseMatch}
+          style={{ backgroundColor: theme.warning, marginRight: 8 }}
+        />
+         {activeMatch.gameType !== 'sac_te' && (
+          <Button
+            icon={<Ionicons name="settings-outline" size={20} color={theme.text} />}
+            shape="circle"
+            size="md"
+            variant="secondary"
+            onPress={handleEditConfig}
+          />
+        )}
+         <Button
+          shape = "pill"
+          size = "md"
+          variant="secondary"
           onPress={handleAddRound}
           icon={<Ionicons name="add-circle-outline" size={24} color="#62aa10ff" />}
           style={{ flex: 1 }}
         >
           {i18n.t('new_round')}
         </Button>
+        <Button
+          icon={<Ionicons name="timer-outline" size={20} color={showTimer ? "#62aa10ff" : theme.text} />}
+          shape="circle"
+          size="md"
+          variant="secondary"
+          onPress={handleEditTimer}
+          style={showTimer ? { backgroundColor: theme.surface } : {}}
+        />
       </View>
 
       {/* Config Edit Modal */}
@@ -316,13 +338,21 @@ export const ActiveMatchScreen: React.FC = () => {
       >
         <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.background }]}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowConfigModal(false)}>
-              <Ionicons name="close" size={28} color={theme.text} />
-            </TouchableOpacity>
+            <Button
+              icon={<Ionicons name="close" size={24} color={theme.text} />}
+              shape="circle"
+              size="sm"
+              variant="ghost"
+              onPress={() => setShowConfigModal(false)}
+            />
             <Text style={[styles.modalTitle, { color: theme.text }]}>{i18n.t('edit_config')}</Text>
-            <TouchableOpacity onPress={handleSaveConfig}>
-              <Ionicons name="checkmark" size={28} color={theme.primary} />
-            </TouchableOpacity>
+            <Button
+              icon={<Ionicons name="checkmark" size={24} color={theme.primary} />}
+              shape="circle"
+              size="sm"
+              variant="ghost"
+              onPress={handleSaveConfig}
+            />
           </View>
 
           <ScrollView contentContainerStyle={styles.modalContent}>

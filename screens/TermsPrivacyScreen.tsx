@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { updateSettings } from '../services/settingsService';
 import i18n from '../utils/i18n';
+import { Button } from '../components/rn-ui/Button';
 
 export const TermsPrivacyScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -189,20 +190,14 @@ export const TermsPrivacyScreen: React.FC = () => {
 
       {/* Continue Button */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.button,
-            {
-              backgroundColor: canContinue ? theme.primary : theme.border,
-            },
-          ]}
+        <Button
+          label={`${i18n.t('confirm')} & ${i18n.t('continue')}`}
           onPress={handleContinue}
           disabled={!canContinue}
-        >
-          <Text style={[styles.buttonText, { opacity: canContinue ? 1 : 0.5 }]}>
-            {i18n.t('confirm')} & {i18n.t('continue')}
-          </Text>
-        </TouchableOpacity>
+          shape="pill"
+          size="lg"
+          variant="primary"
+        />
       </View>
     </SafeAreaView>
   );

@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,30 @@ import {
   Image,
   Platform,
   ViewStyle,
+  Modal,
+  Pressable,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../contexts/ThemeContext';
+import { LongPressGestureHandler, State } from 'react-native-gesture-handler';
+import { Animated } from 'react-native';
 
 import { GlassContainer } from './GlassContainer';
 
 /* =========================
    TYPES
 ========================= */
+export interface ContextMenuItem {
+  id: string;
+  label: string;
+  icon?: string; // Ionicons name
+  destructive?: boolean;
+  disabled?: boolean;
+}
+
 interface CardProps {
   children: ReactNode;
   onPress?: () => void;
@@ -25,6 +38,9 @@ interface CardProps {
   accentColor?: string;
   style?: ViewStyle;
   blurIntensity?: number;
+  contextMenuItems?: ContextMenuItem[];
+  onContextMenuPress?: (itemId: string) => void;
+  contextMenuPosition?: 'top' | 'bottom' | 'auto';
 }
 
 interface PlayerCardProps {
@@ -38,6 +54,7 @@ interface PlayerCardProps {
   onPress?: () => void;
   selected?: boolean;
   showActions?: boolean;
+  blurIntensity?: number;
 }
 
 /* =========================
@@ -50,13 +67,88 @@ export const Card: React.FC<CardProps> = ({
   accentColor,
   style,
   blurIntensity,
+  contextMenuItems,
+  onContextMenuPress,
+  contextMenuPosition = 'auto',
 }) => {
   const { theme, isDark } = useTheme();
   const baseColor = accentColor || theme.primary;
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const cardRef = useRef<View>(null);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const hasContextMenu = contextMenuItems && contextMenuItems.length > 0;
+
+  const handleLongPress = (event: any) => {
+    if (!hasContextMenu) return;
+
+    // Measure card position
+    cardRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      const screenHeight = Dimensions.get('window').height;
+      let posY = pageY;
+
+      // Auto-position logic
+      if (contextMenuPosition === 'auto') {
+        const spaceBelow = screenHeight - (pageY + height);
+        const menuHeight = contextMenuItems.length * 56 + 16; // Approximate
+        if (spaceBelow < menuHeight && pageY > menuHeight) {
+          posY = pageY - menuHeight - 8;
+        } else {
+          posY = pageY + height + 8;
+        }
+      } else if (contextMenuPosition === 'top') {
+        posY = pageY - (contextMenuItems.length * 56 + 16) - 8;
+      } else {
+        posY = pageY + height + 8;
+      }
+
+      setMenuPosition({ x: pageX, y: posY });
+      setMenuVisible(true);
+    });
+
+    // Haptic feedback (iOS)
+    if (Platform.OS === 'ios') {
+      // Note: You may want to add expo-haptics for this
+      // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+  };
+
+  const onGestureEvent = (event: any) => {
+    if (event.nativeEvent.state === State.ACTIVE) {
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }).start();
+    } else if (event.nativeEvent.state === State.BEGAN) {
+      // Long press started
+    } else if (event.nativeEvent.state === State.END) {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }).start();
+      if (event.nativeEvent.duration >= 500) {
+        handleLongPress(event);
+      }
+    } else {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
+
+  const handleMenuDismiss = () => {
+    setMenuVisible(false);
+  };
+
+  const handleMenuItemPress = (itemId: string) => {
+    setMenuVisible(false);
+    onContextMenuPress?.(itemId);
+  };
 
   const Wrapper = onPress ? TouchableOpacity : View;
-
-  return (
+  const CardContent = (
     <Wrapper
       activeOpacity={0.75}
       onPress={onPress}
@@ -67,10 +159,16 @@ export const Card: React.FC<CardProps> = ({
         colors={
           selected
             ? [baseColor + 'AA', baseColor + '44', baseColor + 'AA']
+            : isDark
+            ? [
+                'rgba(255,255,255,0.2)',
+                'rgba(255,255,255,0.05)',
+                'rgba(255,255,255,0.2)',
+              ]
             : [
-                'rgba(255,255,255,0.6)',
-                'rgba(255,255,255,0.15)',
-                'rgba(255,255,255,0.6)',
+                'rgba(255,255,255,0.8)',
+                'rgba(255,255,255,0.3)',
+                'rgba(255,255,255,0.8)',
               ]
         }
         start={{ x: 0, y: 0 }}
@@ -79,7 +177,7 @@ export const Card: React.FC<CardProps> = ({
       >
         {/* ===== GLASS BODY USING GlassContainer ===== */}
         <GlassContainer
-          intensity={blurIntensity ?? (selected ? 85 : 70)}
+          intensity={blurIntensity ?? (selected ? 80 : 60)}
           isDark={isDark}
           style={styles.glass}
         >
@@ -88,8 +186,8 @@ export const Card: React.FC<CardProps> = ({
             colors={[
               'rgba(255,255,255,0)',
               isDark
-                ? 'rgba(255,255,255,0.08)'
-                : 'rgba(255,255,255,0.45)',
+                ? 'rgba(255,255,255,0.06)'
+                : 'rgba(255,255,255,0.4)',
               'rgba(255,255,255,0)',
             ]}
             start={{ x: 0, y: 0 }}
@@ -103,6 +201,33 @@ export const Card: React.FC<CardProps> = ({
       </LinearGradient>
     </Wrapper>
   );
+
+  if (!hasContextMenu) {
+    return CardContent;
+  }
+
+  return (
+    <>
+      <LongPressGestureHandler
+        onHandlerStateChange={onGestureEvent}
+        minDurationMs={500}
+      >
+        <Animated.View ref={cardRef} style={{ transform: [{ scale: scaleAnim }] }}>
+          {CardContent}
+        </Animated.View>
+      </LongPressGestureHandler>
+
+      <ContextMenu
+        visible={menuVisible}
+        items={contextMenuItems}
+        position={menuPosition}
+        onDismiss={handleMenuDismiss}
+        onItemPress={handleMenuItemPress}
+        isDark={isDark}
+        theme={theme}
+      />
+    </>
+  );
 };
 
 /* =========================
@@ -115,12 +240,13 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
   onPress,
   selected = false,
   showActions = true,
+  blurIntensity,
 }) => {
   const { theme } = useTheme();
   const color = player.color || theme.primary;
 
   return (
-    <Card onPress={onPress} selected={selected} accentColor={color}>
+    <Card onPress={onPress} selected={selected} accentColor={color} blurIntensity={blurIntensity}>
       <View style={styles.playerRow}>
         {/* Avatar */}
         <LinearGradient
@@ -201,6 +327,191 @@ const GlassIcon = ({
     </LinearGradient>
   </TouchableOpacity>
 );
+
+/* =========================
+   CONTEXT MENU
+========================= */
+interface ContextMenuProps {
+  visible: boolean;
+  items: ContextMenuItem[];
+  position: { x: number; y: number };
+  onDismiss: () => void;
+  onItemPress: (itemId: string) => void;
+  isDark: boolean;
+  theme: any;
+}
+
+const ContextMenu: React.FC<ContextMenuProps> = ({
+  visible,
+  items,
+  position,
+  onDismiss,
+  onItemPress,
+  isDark,
+  theme,
+}) => {
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.85)).current;
+  const translateYAnim = useRef(new Animated.Value(-4)).current;
+
+  React.useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.spring(translateYAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.85,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: -4,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onDismiss}
+      statusBarTranslucent
+    >
+      {/* Backdrop with blur and dimming */}
+      <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss}>
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: opacityAnim }]}>
+          {Platform.OS === 'ios' ? (
+            <BlurView
+              intensity={35}
+              tint={isDark ? 'dark' : 'light'}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : null}
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: 'rgba(0,0,0,0.3)' },
+            ]}
+          />
+        </Animated.View>
+      </Pressable>
+
+      {/* Context Menu */}
+      <Animated.View
+        style={[
+          menuStyles.menuContainer,
+          {
+            top: position.y,
+            left: 16,
+            right: 16,
+            opacity: opacityAnim,
+            transform: [
+              { scale: scaleAnim },
+              { translateY: translateYAnim },
+            ],
+          },
+        ]}
+      >
+        <GlassContainer
+          intensity={98}
+          isDark={isDark}
+          vibrancy={true}
+          vibrancyStrength="high"
+          materialType="regular"
+          style={menuStyles.menu}
+        >
+          {items.map((item, index) => (
+            <React.Fragment key={item.id}>
+              <TouchableOpacity
+                style={[
+                  menuStyles.menuItem,
+                  item.disabled && menuStyles.menuItemDisabled,
+                ]}
+                onPress={() => !item.disabled && onItemPress(item.id)}
+                activeOpacity={0.6}
+                disabled={item.disabled}
+              >
+                {item.icon && (
+                  <Ionicons
+                    name={item.icon as any}
+                    size={24}
+                    color={
+                      item.disabled
+                        ? isDark
+                          ? 'rgba(255,255,255,0.3)'
+                          : 'rgba(0,0,0,0.3)'
+                        : item.destructive
+                        ? '#FF3B30'
+                        : isDark
+                        ? '#FFFFFF'
+                        : '#000000'
+                    }
+                    style={menuStyles.menuIcon}
+                  />
+                )}
+                <Text
+                  style={[
+                    menuStyles.menuLabel,
+                    {
+                      color: item.disabled
+                        ? isDark
+                          ? 'rgba(255,255,255,0.4)'
+                          : 'rgba(0,0,0,0.4)'
+                        : item.destructive
+                        ? '#FF3B30'
+                        : isDark
+                        ? '#FFFFFF'
+                        : '#000000',
+                    },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+              {index < items.length - 1 && (
+                <View
+                  style={[
+                    menuStyles.separator,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(255,255,255,0.15)'
+                        : 'rgba(0,0,0,0.1)',
+                    },
+                  ]}
+                />
+              )}
+            </React.Fragment>
+          ))}
+        </GlassContainer>
+      </Animated.View>
+    </Modal>
+  );
+};
 
 /* =========================
    STYLES
@@ -286,5 +597,42 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+});
+
+/* =========================
+   MENU STYLES
+========================= */
+const menuStyles = StyleSheet.create({
+  menuContainer: {
+    position: 'absolute',
+    zIndex: 1000,
+  },
+  menu: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    paddingVertical: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    minHeight: 56,
+  },
+  menuItemDisabled: {
+    opacity: 0.5,
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuLabel: {
+    fontSize: 17,
+    fontWeight: '400',
+    letterSpacing: -0.4,
+  },
+  separator: {
+    height: 0.5,
+    marginHorizontal: 16,
   },
 });
