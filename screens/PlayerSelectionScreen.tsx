@@ -21,6 +21,7 @@ import { showWarning } from '../utils/toast';
 import { Badge } from '../components/rn-ui';
 import { Card } from '../components/Card';
 import { WallpaperBackground } from '../components/WallpaperBackground';
+import { useNavigationVisibility } from '../contexts/NavigationContext';
 type PlayerSelectionNavigationProp = NativeStackNavigationProp<MatchStackParamList, 'PlayerSelection'>;
 
 export const PlayerSelectionScreen: React.FC = () => {
@@ -28,9 +29,15 @@ export const PlayerSelectionScreen: React.FC = () => {
   const navigation = useNavigation<PlayerSelectionNavigationProp>();
   const route = useRoute();
   const gameType = (route.params as any)?.gameType as GameType;
+  const { setTabBarVisible } = useNavigationVisibility();
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
+
+  // Hide tab bar when entering match creation flow
+  useEffect(() => {
+    setTabBarVisible(false);
+  }, [setTabBarVisible]);
 
   useEffect(() => {
     loadPlayers();

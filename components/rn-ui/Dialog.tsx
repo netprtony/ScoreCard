@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   ViewStyle,
   ScrollView,
+  Platform,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DesignSystem } from '../../constants/designSystem';
 import { mergeStyles } from './utils';
@@ -34,13 +36,30 @@ export const Dialog: React.FC<DialogProps> = ({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      statusBarTranslucent
     >
       <View style={styles.overlay}>
-        <TouchableOpacity
-          style={styles.backdrop}
-          activeOpacity={1}
-          onPress={onClose}
-        />
+        {/* Blurred Backdrop */}
+        {Platform.OS === 'ios' ? (
+          <BlurView 
+            intensity={60} 
+            tint={isDark ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+          >
+            <TouchableOpacity
+              style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.2)' }]}
+              activeOpacity={1}
+              onPress={onClose}
+            />
+          </BlurView>
+        ) : (
+          <TouchableOpacity
+            style={[styles.backdrop, { backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)' }]}
+            activeOpacity={1}
+            onPress={onClose}
+          />
+        )}
+
         <View
           style={mergeStyles(
             styles.content,

@@ -18,6 +18,7 @@ import { getAllGameTypes } from '../services/gameTypeService';
 import { Badge } from '../components/rn-ui';
 import { Card } from '../components/Card';
 import { WallpaperBackground } from '../components/WallpaperBackground';
+import { useNavigationVisibility } from '../contexts/NavigationContext';
 
 type GameSelectionNavigationProp = NativeStackNavigationProp<MatchStackParamList, 'GameSelection'>;
 
@@ -26,6 +27,23 @@ export const GameSelectionScreen: React.FC = () => {
   const { t } = useLanguage();
   const navigation = useNavigation<GameSelectionNavigationProp>();
   const [gameTypes, setGameTypes] = useState<GameType[]>([]);
+  const { setTabBarVisible } = useNavigationVisibility();
+
+  // Hide tab bar when entering match creation flow
+  useEffect(() => {
+    setTabBarVisible(false);
+  }, [setTabBarVisible]);
+
+  // Show tab bar when leaving this screen (back navigation, including swipe gesture)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // Only show tab bar if going back (not forward to PlayerSelection)
+      if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
+        setTabBarVisible(true);
+      }
+    });
+    return unsubscribe;
+  }, [navigation, setTabBarVisible]);
 
   useEffect(() => {
     loadGameTypes();
@@ -38,6 +56,11 @@ export const GameSelectionScreen: React.FC = () => {
     } catch (error) {
       console.error('Error loading game types:', error);
     }
+  };
+
+  // Handle back button - show tab bar again
+  const handleGoBack = () => {
+    navigation.goBack();
   };
 
   const handleSelectGame = (gameType: GameType) => {
@@ -84,12 +107,17 @@ export const GameSelectionScreen: React.FC = () => {
     <WallpaperBackground>
       <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          {t('selectGame')}
-        </Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          {t('selectGameType')}
-        </Text>
+        <TouchableOpacity onPress={handleGoBack} style={{ marginRight: 16 }}>
+          <Ionicons name="arrow-back" size={28} color={theme.text} />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.title, { color: theme.text }]}>
+            {t('selectGame')}
+          </Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            {t('selectGameType')}
+          </Text>
+        </View>
       </View>
 
       <FlatList
@@ -108,6 +136,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 20,
     paddingBottom: 12,
   },

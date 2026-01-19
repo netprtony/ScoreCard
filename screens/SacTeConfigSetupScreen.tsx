@@ -20,6 +20,7 @@ import { showSuccess, showWarning } from '../utils/toast';
 import { Button } from '../components/rn-ui';
 import { Card } from '../components/Card';
 import { WallpaperBackground } from '../components/WallpaperBackground';
+import { useNavigationVisibility } from '../contexts/NavigationContext';
 
 export const SacTeConfigSetupScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -27,9 +28,15 @@ export const SacTeConfigSetupScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { gameType, playerIds } = (route.params as any) || {};
+  const { setTabBarVisible } = useNavigationVisibility();
 
   const [config, setConfig] = useState<SacTeConfig | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+
+  // Hide tab bar when entering match creation flow
+  useEffect(() => {
+    setTabBarVisible(false);
+  }, [setTabBarVisible]);
 
   useEffect(() => {
     loadDefaultConfig();

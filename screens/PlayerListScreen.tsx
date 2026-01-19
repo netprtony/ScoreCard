@@ -43,6 +43,24 @@ const hslToHex = (h: number, s: number, l: number): string => {
   return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
 };
 
+// Generate color grid (12 columns x 8 rows)
+const generateColorGrid = (rows: number, cols: number): string[][] => {
+  const grid: string[][] = [];
+  
+  for (let row = 0; row < rows; row++) {
+    const rowColors: string[] = [];
+    for (let col = 0; col < cols; col++) {
+      const hue = (col / cols) * 360;
+      const lightness = 100 - (row / (rows - 1)) * 100;
+      const saturation = row === 0 ? 0 : 100;
+      rowColors.push(hslToHex(hue, saturation, lightness));
+    }
+    grid.push(rowColors);
+  }
+  
+  return grid;
+};
+
 // Avatar directory
 const AVATAR_DIR = FileSystem.documentDirectory + 'avatars/';
 
@@ -59,6 +77,13 @@ export const PlayerListScreen: React.FC = () => {
   const [selectedAvatar, setSelectedAvatar] = useState<string | undefined>(undefined);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  // Modern color picker state
+  const [colorPickerTab, setColorPickerTab] = useState<'grid' | 'spectrum' | 'sliders'>('grid');
+  const [opacity, setOpacity] = useState(100);
+  const [recentColors, setRecentColors] = useState<string[]>([
+    '#FF5733', '#000000', '#0099FF', '#00FF66', '#FF6600', '#9B59B6', '#E74C3C', '#3498DB'
+  ]);
 
   // Update selectedColor when HSL values change
   useEffect(() => {
@@ -280,73 +305,185 @@ export const PlayerListScreen: React.FC = () => {
     </View>
   );
 
-  const renderColorPicker = () => (
-    <View style={styles.colorPickerContainer}>
-      <Text style={[styles.colorPickerLabel, { color: theme.textSecondary }]}>
-        Chọn màu:
-      </Text>
-      
-      {/* Color Preview */}
-      <View style={styles.colorPreviewContainer}>
-        <View style={[styles.colorPreview, { backgroundColor: selectedColor }]} />
-        <Text style={[styles.colorHexText, { color: theme.text }]}>{selectedColor}</Text>
-      </View>
-
-      {/* Hue Slider */}
-      <View style={styles.sliderContainer}>
-        <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
-          Màu sắc (Hue: {Math.round(hue)}°)
+  const renderColorPicker = () => {
+    const colorGrid = generateColorGrid(8, 12);
+    
+    return (
+      <View style={styles.colorPickerContainer}>
+        <Text style={[styles.colorPickerLabel, { color: theme.textSecondary }]}>
+          Chọn màu:
         </Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={0}
-          maximumValue={360}
-          step={1}
-          value={hue}
-          onValueChange={setHue}
-          minimumTrackTintColor={hslToHex(hue, 100, 50)}
-          maximumTrackTintColor={theme.border}
-          thumbTintColor={hslToHex(hue, 100, 50)}
-        />
-      </View>
+        
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity 
+            style={[styles.tab, colorPickerTab === 'grid' && styles.tabActive]}
+            onPress={() => setColorPickerTab('grid')}
+          >
+            <Text style={[styles.tabText, colorPickerTab === 'grid' && styles.tabTextActive]}>
+              Grid
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tab, colorPickerTab === 'spectrum' && styles.tabActive]}
+            onPress={() => setColorPickerTab('spectrum')}
+          >
+            <Text style={[styles.tabText, colorPickerTab === 'spectrum' && styles.tabTextActive]}>
+              Spectrum
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tab, colorPickerTab === 'sliders' && styles.tabActive]}
+            onPress={() => setColorPickerTab('sliders')}
+          >
+            <Text style={[styles.tabText, colorPickerTab === 'sliders' && styles.tabTextActive]}>
+              Sliders
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Saturation Slider */}
-      <View style={styles.sliderContainer}>
-        <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
-          Độ bão hòa: {Math.round(saturation)}%
-        </Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={0}
-          maximumValue={100}
-          step={1}
-          value={saturation}
-          onValueChange={setSaturation}
-          minimumTrackTintColor={selectedColor}
-          maximumTrackTintColor={theme.border}
-          thumbTintColor={selectedColor}
-        />
-      </View>
+        {/* Tab Content */}
+        {colorPickerTab === 'grid' && (
+          <View style={styles.colorGrid}>
+            {colorGrid.map((row, i) => (
+              <View key={i} style={styles.colorRow}>
+                {row.map((color, j) => (
+                  <TouchableOpacity
+                    key={j}
+                    style={[
+                      styles.colorCell, 
+                      { backgroundColor: color },
+                      selectedColor === color && styles.colorCellSelected
+                    ]}
+                    onPress={() => setSelectedColor(color)}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
 
-      {/* Lightness Slider */}
-      <View style={styles.sliderContainer}>
-        <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
-          Độ sáng: {Math.round(lightness)}%
-        </Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={0}
-          maximumValue={100}
-          step={1}
-          value={lightness}
-          onValueChange={setLightness}
-          minimumTrackTintColor={selectedColor}
-          maximumTrackTintColor={theme.border}
-          thumbTintColor={selectedColor}
-        />
+        {colorPickerTab === 'spectrum' && (
+          <View style={styles.spectrumContainer}>
+            <Text style={[styles.comingSoonText, { color: theme.textSecondary }]}>
+              Spectrum view coming soon...
+            </Text>
+          </View>
+        )}
+
+        {colorPickerTab === 'sliders' && (
+          <View>
+            {/* Hue Slider */}
+            <View style={styles.sliderContainer}>
+              <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
+                Hue: {Math.round(hue)}°
+              </Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={360}
+                step={1}
+                value={hue}
+                onValueChange={setHue}
+                minimumTrackTintColor={hslToHex(hue, 100, 50)}
+                maximumTrackTintColor={theme.border}
+                thumbTintColor={hslToHex(hue, 100, 50)}
+              />
+            </View>
+
+            {/* Saturation Slider */}
+            <View style={styles.sliderContainer}>
+              <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
+                Saturation: {Math.round(saturation)}%
+              </Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={100}
+                step={1}
+                value={saturation}
+                onValueChange={setSaturation}
+                minimumTrackTintColor={selectedColor}
+                maximumTrackTintColor={theme.border}
+                thumbTintColor={selectedColor}
+              />
+            </View>
+
+            {/* Lightness Slider */}
+            <View style={styles.sliderContainer}>
+              <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
+                Lightness: {Math.round(lightness)}%
+              </Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={100}
+                step={1}
+                value={lightness}
+                onValueChange={setLightness}
+                minimumTrackTintColor={selectedColor}
+                maximumTrackTintColor={theme.border}
+                thumbTintColor={selectedColor}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Opacity Slider */}
+        <View style={styles.opacityContainer}>
+          <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
+            Opacity
+          </Text>
+          <View style={styles.opacitySliderWrapper}>
+            <View style={styles.opacityPreview}>
+              <View style={[styles.opacityColor, { backgroundColor: selectedColor, opacity: opacity / 100 }]} />
+            </View>
+            <Slider
+              style={styles.opacitySlider}
+              minimumValue={0}
+              maximumValue={100}
+              step={1}
+              value={opacity}
+              onValueChange={setOpacity}
+              minimumTrackTintColor={selectedColor}
+              maximumTrackTintColor={theme.border}
+              thumbTintColor={selectedColor}
+            />
+            <Text style={[styles.opacityText, { color: theme.text }]}>
+              {Math.round(opacity)}%
+            </Text>
+          </View>
+        </View>
+
+        {/* Recent Colors */}
+        <View style={styles.recentColorsContainer}>
+          {recentColors.map((color, i) => (
+            <TouchableOpacity
+              key={i}
+              style={[styles.recentColorSwatch, { backgroundColor: color }]}
+              onPress={() => setSelectedColor(color)}
+            />
+          ))}
+          <TouchableOpacity 
+            style={[styles.addColorButton, { borderColor: theme.border }]}
+            onPress={() => {
+              if (!recentColors.includes(selectedColor)) {
+                setRecentColors([selectedColor, ...recentColors.slice(0, 7)]);
+              }
+            }}
+          >
+            <Ionicons name="add" size={24} color={theme.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Color Preview */}
+        <View style={styles.colorPreviewContainer}>
+          <View style={[styles.colorPreview, { backgroundColor: selectedColor }]} />
+          <Text style={[styles.colorHexText, { color: theme.text }]}>{selectedColor}</Text>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <WallpaperBackground>
@@ -387,7 +524,7 @@ export const PlayerListScreen: React.FC = () => {
       />
 
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: theme.primary }]}
+        style={[styles.fab, { backgroundColor: theme.primary }, { marginBottom: 50 }]}
         onPress={() => setShowAddModal(true)}
         activeOpacity={0.8}
       >
@@ -421,22 +558,27 @@ export const PlayerListScreen: React.FC = () => {
 
         <DialogFooter>
           <Button
+            size="lg"
+            shape="rounded"
             variant="secondary"
             onPress={() => {
               setPlayerName('');
               setSelectedAvatar(undefined);
               setShowAddModal(false);
             }}
-            style={{ flex: 1 }}
+            style={{ flex: 1, minHeight: 56 , marginBottom: 45}}
           >
             {i18n.t('cancel')}
           </Button>
 
           <Button
+            size="lg"
+            shape="rounded"
+            variant="primary"
             onPress={handleAddPlayer}
             loading={loading}
             disabled={loading}
-            style={{ flex: 1 }}
+            style={{ flex: 1, minHeight: 56 , marginBottom: 45 }}
           >
             {i18n.t('save')}
           </Button>
@@ -470,6 +612,8 @@ export const PlayerListScreen: React.FC = () => {
 
         <DialogFooter>
           <Button
+            size="lg"
+            shape="rounded"
             variant="secondary"
             onPress={() => {
               setPlayerName('');
@@ -477,16 +621,19 @@ export const PlayerListScreen: React.FC = () => {
               setEditingPlayer(null);
               setShowEditModal(false);
             }}
-            style={{ flex: 1 }}
+            style={{ flex: 1, minHeight: 56 , marginBottom: 45}}
           >
             {i18n.t('cancel')}
           </Button>
 
           <Button
+            size="lg"
+            shape="rounded"
+            variant="primary"
             onPress={handleEditPlayer}
             loading={loading}
             disabled={loading}
-            style={{ flex: 1 }}
+            style={{ flex: 1, minHeight: 56 , marginBottom: 45}}
           >
             {i18n.t('save')}
           </Button>
@@ -713,5 +860,110 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 12,
     fontWeight: '600',
+  },
+  // Modern Color Picker Styles
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  tabActive: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  tabTextActive: {
+    color: '#FFF',
+  },
+  colorGrid: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  colorRow: {
+    flexDirection: 'row',
+  },
+  colorCell: {
+    flex: 1,
+    aspectRatio: 1,
+    borderWidth: 0,
+  },
+  colorCellSelected: {
+    borderWidth: 3,
+    borderColor: '#FFF',
+  },
+  spectrumContainer: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  comingSoonText: {
+    fontSize: 16,
+    fontStyle: 'italic',
+  },
+  opacityContainer: {
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  opacitySliderWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+  },
+  opacityPreview: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  opacityColor: {
+    width: '100%',
+    height: '100%',
+  },
+  opacitySlider: {
+    flex: 1,
+  },
+  opacityText: {
+    fontSize: 14,
+    fontWeight: '600',
+    minWidth: 50,
+    textAlign: 'right',
+  },
+  recentColorsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  recentColorSwatch: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+  },
+  addColorButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -12,7 +12,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useMatch } from '../contexts/MatchContext';
 import { Match, Player } from '../types/models';
@@ -26,6 +26,7 @@ import { WallpaperBackground } from '../components/WallpaperBackground';
 export const MatchHistoryScreen: React.FC = () => {
   const { theme } = useTheme();
   const { resumeMatch } = useMatch();
+  const navigation = useNavigation();
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -110,6 +111,8 @@ export const MatchHistoryScreen: React.FC = () => {
               setSelectedMatch(null);
               loadMatches();
               showSuccess('Thành công', 'Đã tiếp tục trận đấu');
+              // Navigate to ActiveMatchScreen to avoid tab bar visibility issues
+              navigation.navigate('Matches' as never);
             } catch (error) {
               console.error('Error continuing match:', error);
               showWarning('Lỗi', 'Không thể tiếp tục trận đấu');

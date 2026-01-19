@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   Switch,
+  BackHandler,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,15 +23,55 @@ import i18n from '../utils/i18n';
 import { showSuccess, showWarning } from '../utils/toast';
 import { Button } from '../components/rn-ui';
 import { WallpaperBackground } from '../components/WallpaperBackground';
+import { useNavigationVisibility } from '../contexts/NavigationContext';
 export const ActiveMatchScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const { activeMatch, ongoingMatches, endMatch, refreshMatch, updateConfig, pauseMatch, resumeMatch } = useMatch();
+  const { setTabBarVisible, setGestureEnabled } = useNavigationVisibility();
   
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editedConfig, setEditedConfig] = useState<ScoringConfig | null>(null);
   const [showOngoingModal, setShowOngoingModal] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
+
+  // Control tab bar visibility and gesture based on activeMatch state
+  useEffect(() => {
+    if (activeMatch) {
+      // Hide tab bar and disable gesture when there's an active match
+      setTabBarVisible(false);
+      setGestureEnabled(false);  // Disable gesture during active match
+    } else {
+      // Show tab bar and enable gesture when there's no active match
+      setTabBarVisible(true);
+      setGestureEnabled(true);   // Enable gesture when no active match
+    }
+  }, [activeMatch, setTabBarVisible, setGestureEnabled]);
+
+  // Block swipe gesture navigation when there's an active match
+  useEffect(() => {
+    if (!activeMatch) return;
+
+    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+      // Check if this is a swipe/back gesture (not programmatic navigation from buttons)
+      const action = e.data.action;
+      
+      // If it's a GO_BACK or POP action, it means user is trying to swipe back or press back button
+      if (action.type === 'GO_BACK' || action.type === 'POP') {
+        // Prevent navigation by not allowing the action to proceed
+        e.preventDefault();
+        
+        // Show alert to user that they cannot swipe back during active match
+        Alert.alert(
+          i18n.t('match_happening'),
+          'Không thể quay lại khi trận đấu đang diễn ra. Vui lòng kết thúc hoặc tạm hoãn trận đấu.',
+          [{ text: 'OK', style: 'cancel' }]
+        );
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, activeMatch]);
 
   const handleAddRound = () => {
     if (activeMatch?.gameType === 'sac_te') {

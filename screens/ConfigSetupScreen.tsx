@@ -21,14 +21,21 @@ import i18n from '../utils/i18n';
 import { showWarning } from '../utils/toast';
 import { Input, Button } from '../components/rn-ui';
 import { Card } from '../components/Card';
+import { useNavigationVisibility } from '../contexts/NavigationContext';
 export const ConfigSetupScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const route = useRoute();
   const { gameType, playerIds } = (route.params as any) || {};
+  const { setTabBarVisible } = useNavigationVisibility();
 
   const [config, setConfig] = useState<ScoringConfig | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+
+  // Hide tab bar when entering match creation flow
+  useEffect(() => {
+    setTabBarVisible(false);
+  }, [setTabBarVisible]);
 
   useEffect(() => {
     loadDefaultConfig();

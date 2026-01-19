@@ -9,6 +9,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { MatchProvider } from './contexts/MatchContext';
 import { WallpaperProvider } from './contexts/WallpaperContext';
+import { NavigationProvider } from './contexts/NavigationContext';
 import { AppNavigator } from './navigation/AppNavigator';
 import { initDatabase } from './services/database';
 
@@ -65,9 +66,11 @@ export default function App() {
     <ThemeProvider>
       <WallpaperProvider>
         <LanguageProvider>
-          <MatchProvider>
-            <AppContent />
-          </MatchProvider>
+          <NavigationProvider>
+            <MatchProvider>
+              <AppContent />
+            </MatchProvider>
+          </NavigationProvider>
         </LanguageProvider>
       </WallpaperProvider>
     </ThemeProvider>
