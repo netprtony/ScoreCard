@@ -314,42 +314,7 @@ export const ConfigSetupScreen: React.FC = () => {
             </>
           )}
         </View>
-
-        {/* Đút 3 Tép */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
-          {/* <View style={styles.switchRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Đút 3 Tép</Text>
-            <Switch
-              value={config.enableDutBaTep}
-              onValueChange={(value) => updateConfig('enableDutBaTep', value)}
-              trackColor={{ false: theme.border, true: theme.primary }}
-              thumbColor="#FFF"
-            />
-          </View> */}
-          
-          {config.enableDutBaTep && (
-            <>
-              {/* <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Điểm đút:</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-                  value={config.dutBaTep.toString()}
-                  onChangeText={(text) => updateConfig('dutBaTep', parseInt(text) || 0)}
-                  keyboardType="numeric"
-                />
-              </View> */}
-              {/* <View style={styles.inputRow}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>{i18n.t('penaltyBaTep')}</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-                  value={config.penaltyBaTep.toString()}
-                  onChangeText={(text) => updateConfig('penaltyBaTep', parseInt(text) || 0)}
-                  keyboardType="numeric"
-                />
-              </View> */}
-            </>
-          )}
-        </View>
+    
       </ScrollView>
 
       <TouchableOpacity

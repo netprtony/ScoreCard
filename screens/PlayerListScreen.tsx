@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 import { PlayerCard } from '../components/Card';
 import { Player } from '../types/models';
@@ -61,6 +62,14 @@ const generateColorGrid = (rows: number, cols: number): string[][] => {
   return grid;
 };
 
+// Generate random vibrant color
+const generateRandomColor = (): string => {
+  const hue = Math.floor(Math.random() * 360);
+  const saturation = 70 + Math.floor(Math.random() * 20); // 70-90%
+  const lightness = 50 + Math.floor(Math.random() * 20);  // 50-70%
+  return hslToHex(hue, saturation, lightness);
+};
+
 // Avatar directory
 const AVATAR_DIR = FileSystem.documentDirectory + 'avatars/';
 
@@ -69,7 +78,9 @@ export const PlayerListScreen: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showBulkAddModal, setShowBulkAddModal] = useState(false);
   const [playerName, setPlayerName] = useState('');
+  const [bulkPlayerNames, setBulkPlayerNames] = useState('');
   const [hue, setHue] = useState(0);
   const [saturation, setSaturation] = useState(70);
   const [lightness, setLightness] = useState(60);
@@ -79,7 +90,7 @@ export const PlayerListScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   
   // Modern color picker state
-  const [colorPickerTab, setColorPickerTab] = useState<'grid' | 'spectrum' | 'sliders'>('grid');
+  const [colorPickerTab, setColorPickerTab] = useState<'grid' | 'spectrum'>('grid');
   const [opacity, setOpacity] = useState(100);
   const [recentColors, setRecentColors] = useState<string[]>([
     '#FF5733', '#000000', '#0099FF', '#00FF66', '#FF6600', '#9B59B6', '#E74C3C', '#3498DB'
@@ -218,6 +229,54 @@ export const PlayerListScreen: React.FC = () => {
     }
   };
 
+  const handleBulkAddPlayers = async () => {
+    if (!bulkPlayerNames.trim()) {
+      showWarning('Lỗi', 'Vui lòng nhập tên người chơi');
+      return;
+    }
+
+    // Parse comma-separated names
+    const names = bulkPlayerNames
+      .split(',')
+      .map(name => {
+        const trimmed = name.trim();
+        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+      })
+      .filter(name => name.length > 0);
+
+    if (names.length === 0) {
+      showWarning('Lỗi', 'Vui lòng nhập ít nhất một tên người chơi');
+      return;
+    }
+
+    const currentCount = await getPlayerCount();
+    const totalCount = currentCount + names.length;
+
+    if (totalCount > 10) {
+      showWarning('Lỗi', `Không thể thêm ${names.length} người chơi. Chỉ còn ${10 - currentCount} chỗ trống.`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Create all players with random colors
+      for (const name of names) {
+        const randomColor = generateRandomColor();
+        await createPlayer(name, randomColor, undefined);
+      }
+
+      setBulkPlayerNames('');
+      setShowBulkAddModal(false);
+      await loadPlayers();
+      showSuccess('Thành công', `Đã thêm ${names.length} người chơi`);
+    } catch (error) {
+      console.error('Error adding players:', error);
+      showWarning('Lỗi', 'Không thể thêm người chơi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeletePlayer = (player: Player) => {
     Alert.alert(
       i18n.t('deletePlayer'),
@@ -332,14 +391,6 @@ export const PlayerListScreen: React.FC = () => {
               Spectrum
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tab, colorPickerTab === 'sliders' && styles.tabActive]}
-            onPress={() => setColorPickerTab('sliders')}
-          >
-            <Text style={[styles.tabText, colorPickerTab === 'sliders' && styles.tabTextActive]}>
-              Sliders
-            </Text>
-          </TouchableOpacity>
         </View>
 
         {/* Tab Content */}
@@ -365,69 +416,81 @@ export const PlayerListScreen: React.FC = () => {
 
         {colorPickerTab === 'spectrum' && (
           <View style={styles.spectrumContainer}>
-            <Text style={[styles.comingSoonText, { color: theme.textSecondary }]}>
-              Spectrum view coming soon...
-            </Text>
+            {/* Hue Slider with Rainbow Gradient */}
+            <View style={styles.sliderContainer}>
+              <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>Màu sắc (Hue)</Text>
+              <View style={{ height: 40, justifyContent: 'center' }}>
+                <LinearGradient
+                  colors={['#FF0000', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF', '#FF00FF', '#FF0000']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ position: 'absolute', left: 0, right: 0, top: 10, bottom: 10, borderRadius: 10 }}
+                />
+                <Slider
+                  style={{ width: '100%', height: 40 }}
+                  minimumValue={0}
+                  maximumValue={360}
+                  step={1}
+                  value={hue}
+                  onValueChange={setHue}
+                  minimumTrackTintColor="transparent"
+                  maximumTrackTintColor="transparent"
+                  thumbTintColor="#FFFFFF"
+                />
+              </View>
+            </View>
+
+            {/* Saturation Slider with Gradient */}
+            <View style={styles.sliderContainer}>
+              <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>Độ đậm (Saturation)</Text>
+              <View style={{ height: 40, justifyContent: 'center' }}>
+                <LinearGradient
+                  colors={[hslToHex(hue, 0, lightness), hslToHex(hue, 100, lightness)]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ position: 'absolute', left: 0, right: 0, top: 10, bottom: 10, borderRadius: 10 }}
+                />
+                <Slider
+                  style={{ width: '100%', height: 40 }}
+                  minimumValue={0}
+                  maximumValue={100}
+                  step={1}
+                  value={saturation}
+                  onValueChange={setSaturation}
+                  minimumTrackTintColor="transparent"
+                  maximumTrackTintColor="transparent"
+                  thumbTintColor="#FFFFFF"
+                />
+              </View>
+            </View>
+
+            {/* Lightness Slider with Gradient */}
+            <View style={styles.sliderContainer}>
+               <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>Độ sáng (Lightness)</Text>
+               <View style={{ height: 40, justifyContent: 'center' }}>
+                <LinearGradient
+                  colors={['#000000', hslToHex(hue, saturation, 50), '#FFFFFF']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ position: 'absolute', left: 0, right: 0, top: 10, bottom: 10, borderRadius: 10 }}
+                />
+                <Slider
+                   style={{ width: '100%', height: 40 }}
+                   minimumValue={0}
+                   maximumValue={100}
+                   step={1}
+                   value={lightness}
+                   onValueChange={setLightness}
+                   minimumTrackTintColor="transparent"
+                   maximumTrackTintColor="transparent"
+                   thumbTintColor="#FFFFFF"
+                />
+              </View>
+            </View>
           </View>
         )}
 
-        {colorPickerTab === 'sliders' && (
-          <View>
-            {/* Hue Slider */}
-            <View style={styles.sliderContainer}>
-              <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
-                Hue: {Math.round(hue)}°
-              </Text>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={360}
-                step={1}
-                value={hue}
-                onValueChange={setHue}
-                minimumTrackTintColor={hslToHex(hue, 100, 50)}
-                maximumTrackTintColor={theme.border}
-                thumbTintColor={hslToHex(hue, 100, 50)}
-              />
-            </View>
 
-            {/* Saturation Slider */}
-            <View style={styles.sliderContainer}>
-              <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
-                Saturation: {Math.round(saturation)}%
-              </Text>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={100}
-                step={1}
-                value={saturation}
-                onValueChange={setSaturation}
-                minimumTrackTintColor={selectedColor}
-                maximumTrackTintColor={theme.border}
-                thumbTintColor={selectedColor}
-              />
-            </View>
-
-            {/* Lightness Slider */}
-            <View style={styles.sliderContainer}>
-              <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>
-                Lightness: {Math.round(lightness)}%
-              </Text>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={100}
-                step={1}
-                value={lightness}
-                onValueChange={setLightness}
-                minimumTrackTintColor={selectedColor}
-                maximumTrackTintColor={theme.border}
-                thumbTintColor={selectedColor}
-              />
-            </View>
-          </View>
-        )}
 
         {/* Opacity Slider */}
         <View style={styles.opacityContainer}>
@@ -524,12 +587,73 @@ export const PlayerListScreen: React.FC = () => {
       />
 
       <TouchableOpacity
+        style={[styles.fab, { backgroundColor: '#6c757d', bottom: 90 }, { marginBottom: 50, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 4 }]}
+        onPress={() => setShowBulkAddModal(true)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="people" size={28} color="#FFF" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={[styles.fab, { backgroundColor: theme.primary }, { marginBottom: 50 }]}
         onPress={() => setShowAddModal(true)}
         activeOpacity={0.8}
       >
         <Ionicons name="add" size={32} color="#FFF" />
       </TouchableOpacity>
+
+      {/* Bulk Add Player Modal */}
+      <Dialog
+        visible={showBulkAddModal}
+        onClose={() => setShowBulkAddModal(false)}
+      >
+        <DialogHeader>
+          <DialogTitle>Thêm nhiều người chơi</DialogTitle>
+        </DialogHeader>
+
+        <DialogContent>
+          <Input
+            placeholder={`Nhập tên người chơi, ngăn cách bởi dấu phẩy\nVí dụ: An, Bình, Chi, Dũng`}
+            value={bulkPlayerNames}
+            onChangeText={setBulkPlayerNames}
+            autoFocus
+            multiline
+            numberOfLines={4}
+            containerStyle={{ marginBottom: 8, height: 120 }}
+            style={{ height: 120, textAlignVertical: 'top', color: theme.text }}
+          />
+          <Text style={{ color: theme.textSecondary, fontSize: 13, fontStyle: 'italic' }}>
+            * Mỗi người chơi sẽ được tạo với màu ngẫu nhiên
+          </Text>
+        </DialogContent>
+
+        <DialogFooter>
+          <Button
+            size="lg"
+            shape="rounded"
+            variant="secondary"
+            onPress={() => {
+              setBulkPlayerNames('');
+              setShowBulkAddModal(false);
+            }}
+            style={{ flex: 1, minHeight: 56, marginBottom: 45 }}
+          >
+            {i18n.t('cancel')}
+          </Button>
+
+          <Button
+            size="lg"
+            shape="rounded"
+            variant="primary"
+            onPress={handleBulkAddPlayers}
+            loading={loading}
+            disabled={loading}
+            style={{ flex: 1, minHeight: 56, marginBottom: 45 }}
+          >
+            Thêm
+          </Button>
+        </DialogFooter>
+      </Dialog>
 
       {/* Add Player Modal */}
       <Dialog
@@ -566,7 +690,7 @@ export const PlayerListScreen: React.FC = () => {
               setSelectedAvatar(undefined);
               setShowAddModal(false);
             }}
-            style={{ flex: 1, minHeight: 56 , marginBottom: 45}}
+            style={{ flex: 1, minHeight: 56, marginBottom: 45 }}
           >
             {i18n.t('cancel')}
           </Button>
@@ -578,7 +702,7 @@ export const PlayerListScreen: React.FC = () => {
             onPress={handleAddPlayer}
             loading={loading}
             disabled={loading}
-            style={{ flex: 1, minHeight: 56 , marginBottom: 45 }}
+            style={{ flex: 1, minHeight: 56, marginBottom: 45 }}
           >
             {i18n.t('save')}
           </Button>

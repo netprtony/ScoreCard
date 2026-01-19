@@ -21,17 +21,15 @@ jobs:
           ## 🎉 Koya Score v1.0.5
 
           ### ✨ What's New
-          - **Heo Penalty Constraints**: Maximum 4 heo per round (2 black, 2 red)
-          - **Killed Player Protection**: Players who are killed cannot be penalized again
-          - **Auto-fill Feature**: Automatically fills remaining heo count when opening penalty modal
-          - **UI Improvements**: 
-            - Remaining badges show "1/2", "0/2" for heo types
-            - Skull icon 💀 indicates killed players
-            - Disabled states when heo type is exhausted
-
-          ### 🔧 Bug Fixes
-          - Fixed color picker slider issues in production builds
-          - Improved gesture handling for sliders
+          - **Match Safety**: 🔒 Blocked swipe-back gesture during active matches to prevent accidental exits.
+          - **Bulk Player Creation**: 👥 Added ability to add multiple players at once (comma-separated).
+          - **Enhanced Color Picker**: 🎨 New Spectrum tab with rainbow gradient for intuitive color selection.
+          - **Smart Auto-Color**: Automatically assigns vibrant random colors to new players.
+          
+          ### 🛠 Improvements
+          - **UI Polish**: Improved Player List UI with new FAB buttons.
+          - **Performance**: Optimized color picker rendering.
+          - replaced old slider knobs with gradient bars.
 
           ### 📱 Platforms
           - Android: AAB (App Bundle) for Google Play Store
