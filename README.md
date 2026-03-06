@@ -1,93 +1,208 @@
-# Tiến Lên Score Tracking App
+# Koya Score — Ứng dụng tính điểm bài
 
-Ứng dụng tính điểm offline cho game bài Tiến Lên, được xây dựng bằng Expo + React Native + TypeScript.
+Ứng dụng tính điểm offline đa trò chơi (Tiến Lên, Sắc Tê, ...) dành cho mobile, được xây dựng bằng **Expo + React Native + TypeScript**.
+
+---
+
+## Mục lục
+
+1. [Giới thiệu](#giới-thiệu)
+2. [Tính năng](#tính-năng)
+3. [Cấu trúc dự án](#cấu-trúc-dự-án)
+4. [Cài đặt và chạy](#cài-đặt-và-chạy)
+5. [Logic tính điểm Tiến Lên](#logic-tính-điểm-tiến-lên)
+6. [Logic tính điểm Sắc Tê](#logic-tính-điểm-sắc-tê)
+7. [Data Models](#data-models)
+8. [Công nghệ sử dụng](#công-nghệ-sử-dụng)
+9. [Tính năng nổi bật](#tính-năng-nổi-bật)
+10. [Build & Release](#build--release)
+11. [License](#license)
+
+---
+
+## Giới thiệu
+
+**Koya Score** là ứng dụng tính điểm bài hoạt động hoàn toàn offline, thiết kế cho nhóm bạn chơi bài tại nhà. Hỗ trợ nhiều loại game với cấu hình điểm số linh hoạt, giao diện Glass UI hiện đại, và đầy đủ tính năng quản lý trận đấu.
+
+- **Tên ứng dụng:** Koya Score
+- **Phiên bản:** 1.0.5
+- **Bundle ID:** `com.tienlen.scorecard`
+- **Nền tảng:** Android & iOS
+
+---
 
 ## Tính năng
 
-### ✅ Đã hoàn thành
+### ✅ Quản lý người chơi
+- Thêm, sửa, xóa người chơi
+- Avatar tuỳ chỉnh (chọn ảnh từ thư viện)
+- Màu sắc riêng cho từng người chơi
+- Lưu trữ cục bộ bằng SQLite
 
-#### 1. Quản lý người chơi
-- ✅ Thêm, sửa, xóa người chơi
-- ✅ Lưu trữ cục bộ (SQLite)
-- ✅ Giới hạn 2-10 người chơi
-- ✅ Giao diện trực quan với avatar
+### ✅ Trò chơi hỗ trợ
+- **Tiến Lên** — tính điểm đầy đủ theo các luật Việt Nam
+- **Sắc Tê** — tính điểm theo luật Cá Nước & Cá Heo
 
-#### 2. Hệ thống tính điểm
-- ✅ Tính điểm cơ bản (hệ số 1 vs hệ số 2)
-- ✅ Luật Tới trắng (người thắng nhận điểm × hệ số, tất cả người khác bị trừ)
-- ✅ Luật Giết (nhân hệ số cho điểm cơ bản, cộng riêng điểm phạt)
-- ✅ Các luật phạt: Heo đen, Heo đỏ, 3 tép, 3 đôi thông, Tứ quý
-- ✅ Luật Chặt heo và Chồng heo
-- ✅ Luật Đút 3 tép
-- ✅ Tất cả hệ số có thể tùy chỉnh
-- ✅ Bật/tắt từng luật riêng biệt
+### ✅ Hệ thống tính điểm (Tiến Lên)
+- Điểm cơ bản theo hệ số 1 & 2
+- Luật Tới trắng (vô hiệu tất cả luật phụ)
+- Luật Giết (nhân hệ số điểm cơ bản, cộng riêng điểm phạt)
+- Luật phạt: Heo đen, Heo đỏ, 3 tép, 3 đôi thông, Tứ quý
+- Luật Chặt heo & Chồng heo (dây chuyền)
+- Luật Đút 3 tép
+- Tất cả hệ số có thể tuỳ chỉnh; bật/tắt từng luật riêng biệt
 
-#### 3. Cài đặt
-- ✅ Chuyển đổi giao diện (Sáng/Tối/Hệ thống)
-- ✅ Đa ngôn ngữ (Tiếng Việt/English)
-- ✅ Giữ màn hình sáng
-- ✅ Giới thiệu ứng dụng
-- ✅ Chính sách quyền riêng tư
+### ✅ Hệ thống tính điểm (Sắc Tê)
+- Cá Nước (main pot) và Cá Heo (side pot tích lũy)
+- Trạng thái người chơi: thắng, gục, tồn
+- White Win (thắng trắng) với hệ số nhân
+- Tích lũy Cá Heo qua nhiều ván
 
-#### 4. Đồng hồ đếm ngược
-- ✅ Bật/tắt bất kỳ lúc nào
-- ✅ Chọn thời gian (1, 2, 3, 5, 10, 15, 30 phút)
-- ✅ Tạm dừng/Tiếp tục
-- ✅ Đặt lại
-- ✅ Âm thanh khi hết giờ
+### ✅ Quản lý trận đấu
+- Tạo trận mới, chọn game type và người chơi
+- Nhập kết quả từng ván (round)
+- Xem chi tiết từng ván
+- Kết thúc hoặc tiếp tục trận
+- Lịch sử tất cả các trận đã chơi
 
-### 🚧 Đang phát triển
+### ✅ Thống kê
+- Tổng điểm, số trận, số thắng, số lần giết theo từng người chơi
 
-- [ ] Màn hình tạo trận đấu mới
-- [ ] Chọn 4 người chơi từ danh sách
-- [ ] Nhập kết quả trận đấu
-- [ ] Chức năng Restart match (lưu lịch sử, tạo trận mới)
-- [ ] Chức năng End match (kết thúc và lưu)
-- [ ] Lịch sử trận đấu
-- [ ] Thống kê người chơi
-- [ ] Chọn hình nền
+### ✅ Đồng hồ đếm ngược (trong trận)
+- Bật/tắt bất kỳ lúc nào
+- Thời gian tuỳ chọn (1–30 phút)
+- Tạm dừng / Tiếp tục / Đặt lại
+- Âm thanh khi hết giờ
+
+### ✅ Cài đặt & giao diện
+- Chuyển đổi giao diện Sáng / Tối / Hệ thống
+- Đa ngôn ngữ: Tiếng Việt & English
+- Hình nền tuỳ chỉnh (thư viện wallpaper Dark & Light)
+- Giữ màn hình sáng
+- Glass UI với BlurView (iOS) và fallback (Android)
+
+### ✅ Onboarding
+- Màn hình Splash với logo animation
+- Màn hình Welcome giới thiệu ứng dụng
+- Điều khoản & Chính sách quyền riêng tư
+
+---
 
 ## Cấu trúc dự án
 
 ```
 ScoreCard/
-├── components/          # Các component tái sử dụng
-│   ├── CountdownTimer.tsx
-│   ├── PlayerCard.tsx
-│   └── ScoreDisplay.tsx
-├── constants/          # Hằng số và theme
-│   └── theme.ts
-├── contexts/           # React Context
-│   └── ThemeContext.tsx
-├── navigation/         # Cấu hình navigation
-│   └── AppNavigator.tsx
-├── screens/            # Các màn hình chính
-│   ├── PlayerListScreen.tsx
-│   ├── NewMatchScreen.tsx
-│   ├── MatchHistoryScreen.tsx
-│   ├── StatisticsScreen.tsx
-│   └── SettingsScreen.tsx
-├── services/           # Business logic và database
-│   ├── database.ts
-│   ├── playerService.ts
-│   ├── matchService.ts
-│   ├── configService.ts
-│   ├── statsService.ts
-│   └── settingsService.ts
-├── types/              # TypeScript interfaces
-│   └── models.ts
-├── utils/              # Utilities
-│   ├── scoringEngine.ts
-│   └── i18n.ts
-└── App.tsx             # Entry point
+├── App.tsx                        # Entry point, khởi tạo providers & database
+├── index.ts                       # Expo entry
+├── app.json                       # Cấu hình Expo (tên app, icon, bundle ID, ...)
+├── package.json                   # Dependencies & scripts
+├── tsconfig.json                  # TypeScript config
+├── babel.config.js                # Babel config
+├── metro.config.js                # Metro bundler config
+├── eas.json                       # EAS Build config
+├── codemagic.yaml                 # Codemagic CI/CD config
+│
+├── assets/                        # Tài nguyên tĩnh
+│   ├── fonts/                     # Font RobotoSlab (nhiều weight)
+│   ├── wallpaper/
+│   │   ├── Dark/                  # Hình nền dark mode
+│   │   └── Light/                 # Hình nền light mode
+│   ├── mainLogoApp.png            # Icon ứng dụng
+│   ├── Splash.png                 # Màn hình splash
+│   ├── adaptive-icon.png          # Android adaptive icon
+│   ├── timer-sound.mp3            # Âm thanh đồng hồ
+│   └── ...
+│
+├── components/                    # UI components tái sử dụng
+│   ├── Card.tsx                   # Card container
+│   ├── CountdownTimer.tsx         # Đồng hồ đếm ngược
+│   ├── GlassContainer.tsx         # Glass effect container
+│   ├── ScoreDisplay.tsx           # Hiển thị điểm số
+│   ├── ScoreTable.tsx             # Bảng điểm tổng hợp
+│   ├── WallpaperBackground.tsx    # Background wallpaper
+│   └── rn-ui/                     # UI component primitives
+│       ├── Avatar.tsx
+│       ├── Badge.tsx
+│       ├── Button.tsx
+│       ├── Dialog.tsx
+│       ├── Input.tsx
+│       ├── Separator.tsx
+│       ├── Switch.tsx
+│       ├── index.ts
+│       └── utils.ts
+│
+├── constants/                     # Hằng số toàn cục
+│   ├── designSystem.ts            # Design tokens (spacing, radius, ...)
+│   ├── fonts.ts                   # Font family constants
+│   ├── theme.ts                   # Light & Dark theme colors
+│   ├── typography.ts              # Text styles
+│   └── index.ts
+│
+├── contexts/                      # React Context providers
+│   ├── ThemeContext.tsx            # Theme (light/dark/system)
+│   ├── LanguageContext.tsx         # Đa ngôn ngữ
+│   ├── MatchContext.tsx            # Trạng thái trận đấu hiện tại
+│   ├── WallpaperContext.tsx        # Hình nền ứng dụng
+│   └── NavigationContext.tsx       # Điều khiển tab bar & gesture
+│
+├── navigation/
+│   └── AppNavigator.tsx            # Root navigator (Stack + Bottom Tabs)
+│
+├── screens/                       # Màn hình chính
+│   ├── SplashScreen.tsx            # Splash / loading
+│   ├── WelcomeScreen.tsx           # Onboarding welcome
+│   ├── TermsPrivacyScreen.tsx      # Điều khoản & quyền riêng tư
+│   ├── PlayerListScreen.tsx        # Danh sách người chơi
+│   ├── GameSelectionScreen.tsx     # Chọn loại game
+│   ├── PlayerSelectionScreen.tsx   # Chọn người chơi cho trận
+│   ├── ConfigSetupScreen.tsx       # Thiết lập cấu hình điểm (Tiến Lên)
+│   ├── ActiveMatchScreen.tsx       # Màn hình trận đang chơi
+│   ├── RoundInputScreen.tsx        # Nhập kết quả ván (Tiến Lên)
+│   ├── RoundDetailsScreen.tsx      # Chi tiết một ván đã chơi
+│   ├── SacTeConfigSetupScreen.tsx  # Thiết lập cấu hình (Sắc Tê)
+│   ├── SacTeRoundInputScreen.tsx   # Nhập kết quả ván (Sắc Tê)
+│   ├── MatchHistoryScreen.tsx      # Lịch sử các trận
+│   ├── StatisticsScreen.tsx        # Thống kê người chơi
+│   └── SettingsScreen.tsx          # Cài đặt ứng dụng
+│
+├── services/                      # Business logic & database
+│   ├── database.ts                 # Khởi tạo & kết nối SQLite
+│   ├── databaseUtils.ts            # Tiện ích database
+│   ├── playerService.ts            # CRUD người chơi
+│   ├── matchService.ts             # CRUD trận đấu (Tiến Lên)
+│   ├── roundService.ts             # CRUD ván đấu
+│   ├── configService.ts            # Quản lý cấu hình điểm
+│   ├── gameTypeService.ts          # Quản lý loại game
+│   ├── sacTeMatchService.ts        # CRUD trận đấu (Sắc Tê)
+│   ├── sacTeConfigService.ts       # Quản lý cấu hình (Sắc Tê)
+│   ├── statsService.ts             # Tính thống kê người chơi
+│   └── settingsService.ts          # Lưu/đọc cài đặt ứng dụng
+│
+├── types/                         # TypeScript interfaces & types
+│   ├── models.ts                   # Tất cả data models
+│   └── navigation.ts               # Navigation param types
+│
+└── utils/                         # Tiện ích
+    ├── scoringEngine.ts            # Engine tính điểm Tiến Lên
+    ├── sacTeScoringEngine.ts       # Engine tính điểm Sắc Tê
+    ├── actionFormatter.ts          # Format hiển thị hành động
+    ├── i18n.ts                     # Đa ngôn ngữ (vi/en)
+    └── toast.ts                    # Thông báo toast
 ```
+
+---
 
 ## Cài đặt và chạy
 
 ### Yêu cầu
-- Node.js 18+
-- npm hoặc yarn
-- Android Studio (cho Android emulator) hoặc thiết bị Android
+
+| Công cụ | Phiên bản tối thiểu |
+|---|---|
+| Node.js | 18+ |
+| npm | 9+ |
+| Expo CLI | SDK 54 |
+| Android Studio | (cho Android emulator) |
+| Xcode | 15+ (chỉ macOS, cho iOS) |
 
 ### Cài đặt dependencies
 
@@ -98,194 +213,285 @@ npm install
 ### Chạy ứng dụng
 
 ```bash
-# Chạy trên Android
+# Khởi động Expo Dev Server (scan QR bằng Expo Go)
+npm start
+
+# Build & chạy trên Android emulator / thiết bị
 npm run android
 
-# Chạy trên iOS (chỉ trên macOS)
+# Build & chạy trên iOS simulator (chỉ macOS)
 npm run ios
 
-# Chạy trên web
+# Chạy trên trình duyệt web
 npm run web
-
-# Chạy Expo Dev Server
-npm start
 ```
+
+---
 
 ## Logic tính điểm Tiến Lên
 
-### 1. Tính điểm cơ bản
+### 1. Điểm cơ bản
 
-- Người thứ nhất lấy điểm từ người thứ tư (hệ số 1)
-- Người thứ hai lấy điểm từ người thứ ba (hệ số 2)
-- Hệ số 1 phải lớn hơn hệ số 2
+- 1st vs 4th: `±baseRatioFirst`
+- 2nd vs 3rd: `±baseRatioSecond`
+- `baseRatioFirst` phải lớn hơn `baseRatioSecond`
 
-**Ví dụ:** Hệ số 4:2
-- A (1st) vs D (4th): A = +4, D = -4
-- B (2nd) vs C (3rd): B = +2, C = -2
+**Ví dụ** (hệ số 4:2):
+```
+A (1st) → +4,  D (4th) → -4
+B (2nd) → +2,  C (3rd) → -2
+```
 
 ### 2. Tới trắng
 
-Khi người chơi thắng bằng Tới trắng:
-- Người thắng nhận: `hệ số 1 × hệ số tới trắng`
-- TẤT CẢ người khác bị trừ cùng số điểm đó
-- Tất cả luật phạt khác BỊ VÔ HIỆU HÓA
-
-**Ví dụ:** Hệ số 4:2, hệ số tới trắng ×2
-- A thắng tới trắng: A = +8
-- B, C, D đều bị trừ: B = -8, C = -8, D = -8
+```
+Người thắng nhận: baseRatioFirst × toiTrangMultiplier
+Tất cả người còn lại: −(số điểm đó)
+Tất cả luật phụ bị vô hiệu
+```
 
 ### 3. Luật Giết
 
-Khi người chơi bị giết:
-- Điểm cơ bản × hệ số giết (×2, ×3, ...)
-- Điểm phạt (thối) được CỘNG RIÊNG, KHÔNG nhân hệ số
-- Người giết nhận tất cả điểm mất của người bị giết
-
-**Ví dụ:** Hệ số 4:2, hệ số giết ×2, phạt heo đen 5 điểm
-- D bị A giết, có 1 heo đen
-- Điểm cơ bản D: -4 × 2 = -8
-- Phạt heo đen: -5
-- Tổng D: -8 - 5 = -13
-- A nhận: +4 (cơ bản) + 8 (giết) + 5 (phạt) = +17
+```
+Điểm cơ bản của người bị giết × killMultiplier
++ Điểm phạt (KHÔNG nhân hệ số)
+→ Người giết nhận toàn bộ
+```
 
 ### 4. Luật phạt (Thối)
 
-Các loại phạt:
-- Heo đen
-- Heo đỏ (phải > heo đen)
-- 3 tép
-- 3 đôi thông
-- Tứ quý
+| Loại | Mô tả |
+|---|---|
+| Heo đen | `penaltyHeoDen` điểm |
+| Heo đỏ | `penaltyHeoDo` điểm (> heo đen) |
+| 3 tép | `penaltyBaTep` điểm |
+| 3 đôi thông | `penaltyBaDoiThong` điểm |
+| Tứ quý | `penaltyTuQuy` điểm |
 
-Quy tắc:
-- Người bị phạt mất điểm
 - Mặc định: điểm phạt về người thứ 3
-- Đặc biệt: nếu bị giết, điểm phạt về người giết
+- Nếu bị giết: điểm phạt về người giết
 
-### 5. Chặt heo
+### 5. Chặt heo & Chồng heo
 
-- Heo đen và heo đỏ có giá trị khác nhau
-- Hỗ trợ chồng heo (hệ số nhân)
-- Người bị chặt mất điểm, người chặt nhận điểm
+- Hỗ trợ dây chuyền (chain): A chặt B → B chặt C → C mất tổng điểm toàn dây
+- Chồng heo: số lần chồng nhân vào tổng điểm
 
 ### 6. Đút 3 tép
 
-- Người bị phạt mất điểm
-- Người thứ nhất nhận điểm
+- Người bị phạt mất `dutBaTep` điểm
+- Người thứ nhất nhận điểm đó
+
+---
+
+## Logic tính điểm Sắc Tê
+
+### Cơ bản
+
+- Người chơi: 2–5 người
+- Mỗi ván: chỉ có 1 người thắng
+
+### Cá Nước (main pot)
+
+- Mỗi người góp `caNuoc.heSo` điểm/ván
+- Người thắng nhận toàn bộ
+
+### Cá Heo (side pot tích lũy)
+
+- Mỗi người góp `caHeo.heSo` điểm/ván
+- Nếu không ai thắng Cá Heo → tích lũy sang ván tiếp
+- Người thắng Cá Heo nhận toàn bộ tích lũy
+
+### Trạng thái người chơi
+
+| Trạng thái | Ý nghĩa | Điểm phạt |
+|---|---|---|
+| Thắng | Xếp 1st | +điểm tổng |
+| Gục | Thua nặng | `−heSoGuc` |
+| Tồn | Thua bình thường | `−heSoTon` |
+
+### White Win (Thắng trắng)
+
+```
+Điểm thắng × whiteWinMultiplier
+```
+
+---
 
 ## Data Models
 
 ### Player
+
 ```typescript
 interface Player {
   id: string;
   name: string;
+  color?: string;        // Màu avatar (hex)
+  avatar?: string;       // Đường dẫn ảnh local
   createdAt: number;
 }
 ```
 
-### ScoringConfig
+### ScoringConfig (Tiến Lên)
+
 ```typescript
 interface ScoringConfig {
   id: string;
   name: string;
-  baseRatioFirst: number;      // Hệ số 1
-  baseRatioSecond: number;     // Hệ số 2
-  toiTrangMultiplier: number;  // Hệ số tới trắng
-  killMultiplier: number;      // Hệ số giết
-  
-  // Giá trị phạt
+  baseRatioFirst: number;       // Hệ số 1
+  baseRatioSecond: number;      // Hệ số 2
+  toiTrangMultiplier: number;   // Hệ số tới trắng
+  killMultiplier: number;       // Hệ số giết
   penaltyHeoDen: number;
   penaltyHeoDo: number;
   penaltyBaTep: number;
   penaltyBaDoiThong: number;
   penaltyTuQuy: number;
-  
-  // Chặt heo
   chatHeoBlack: number;
   chatHeoRed: number;
-  
-  // Đút 3 tép
   dutBaTep: number;
-  
-  // Bật/tắt luật
   enableToiTrang: boolean;
   enableKill: boolean;
   enablePenalties: boolean;
   enableChatHeo: boolean;
   enableDutBaTep: boolean;
+  isDefault: boolean;
+  createdAt: number;
 }
 ```
 
-### Match
+### Match (Tiến Lên)
+
 ```typescript
 interface Match {
   id: string;
-  playerResults: MatchPlayerResult[];
+  gameType: string;                           // "tien_len"
+  playerIds: string[];                        // 4 người chơi
+  playerNames: string[];                      // Snapshot tên
   configSnapshot: ScoringConfig;
+  rounds: Round[];
+  totalScores: { [playerId: string]: number };
+  status: 'active' | 'paused' | 'completed';
   createdAt: number;
-  duration?: number;
+  completedAt?: number;
 }
 ```
 
+### Round (một ván Tiến Lên)
+
+```typescript
+interface Round {
+  id: string;
+  matchId: string;
+  roundNumber: number;
+  rankings: { playerId: string; rank: 1 | 2 | 3 | 4 }[];
+  toiTrangWinner?: string;
+  actions: PlayerAction[];
+  roundScores: { [playerId: string]: number };
+  createdAt: number;
+}
+```
+
+### SacTeConfig
+
+```typescript
+interface SacTeConfig {
+  id: string;
+  name: string;
+  caNuoc: { enabled: boolean; heSo: number };
+  caHeo: { enabled: boolean; heSo: number };
+  heSoGuc: number;
+  heSoTon: number;
+  whiteWinMultiplier: number;
+  minPlayers: number;
+  maxPlayers: number;
+  isDefault: boolean;
+  createdAt: number;
+}
+```
+
+### AppSettings
+
+```typescript
+interface AppSettings {
+  theme: 'light' | 'dark' | 'system';
+  language: 'vi' | 'en';
+  keepScreenAwake: boolean;
+  backgroundImage?: string;
+  hasCompletedOnboarding: boolean;
+  hasAcceptedTerms: boolean;
+}
+```
+
+---
+
 ## Công nghệ sử dụng
 
-- **Framework:** Expo SDK 54
-- **Language:** TypeScript
-- **UI:** React Native
-- **Navigation:** React Navigation (Bottom Tabs)
-- **Database:** SQLite (expo-sqlite)
-- **State Management:** React Context
-- **Internationalization:** i18n-js
-- **Icons:** @expo/vector-icons
+| Thư viện | Mục đích |
+|---|---|
+| Expo SDK 54 | Framework mobile cross-platform |
+| React Native 0.81 | UI framework |
+| TypeScript 5.9 | Type safety |
+| React Navigation 7 | Bottom Tabs + Native Stack |
+| expo-sqlite 16 | Database cục bộ |
+| React Context | State management |
+| i18n-js 4 | Đa ngôn ngữ (vi/en) |
+| expo-blur | Glass UI effect (iOS) |
+| expo-linear-gradient | Gradient backgrounds |
+| expo-audio | Âm thanh đồng hồ |
+| expo-image-picker | Chọn avatar từ thư viện |
+| expo-keep-awake | Giữ màn hình sáng |
+| react-native-reanimated | Animations |
+| react-native-flash-message | Toast notifications |
+| @expo/vector-icons | Ionicons |
+| RobotoSlab | Font chữ |
+
+---
 
 ## Tính năng nổi bật
 
-### 1. Offline-first
-- Tất cả dữ liệu lưu trữ cục bộ
-- Không cần kết nối internet
-- Bảo mật dữ liệu người dùng
+### 🔌 Offline-first
+Toàn bộ dữ liệu lưu cục bộ (SQLite). Không cần internet. Dữ liệu người dùng được bảo mật trên thiết bị.
 
-### 2. Tùy chỉnh cao
-- Tất cả hệ số có thể thay đổi
-- Bật/tắt từng luật riêng
-- Hỗ trợ nhiều cấu hình
+### 🎨 Glass UI
+Tab bar và các container sử dụng BlurView (iOS) với fallback gradient cho Android. Hỗ trợ Dark / Light mode và hình nền wallpaper tuỳ chỉnh.
 
-### 3. Giao diện thân thiện
-- Hỗ trợ Dark/Light mode
-- Đa ngôn ngữ
-- Thiết kế đơn giản, dễ sử dụng
+### 🔧 Tùy chỉnh cao
+Mọi hệ số điểm đều có thể thay đổi. Bật/tắt từng luật riêng. Hỗ trợ lưu nhiều bộ cấu hình (preset).
 
-### 4. Scoring Engine
-- Pure functions, dễ test
-- Logic tách biệt khỏi UI
-- Hỗ trợ tất cả luật Tiến Lên
+### ⚙️ Scoring Engine thuần
+Logic tính điểm được tách biệt khỏi UI dưới dạng pure functions, dễ kiểm tra và mở rộng.
 
-## Phát triển tiếp
+### 🌍 Đa ngôn ngữ
+Tiếng Việt và English, có thể mở rộng thêm ngôn ngữ khác.
 
-### Ưu tiên cao
-1. Hoàn thiện màn hình tạo trận đấu
-2. Nhập kết quả và tính điểm tự động
-3. Lịch sử trận đấu chi tiết
-4. Thống kê người chơi
+---
 
-### Ưu tiên trung bình
-5. Export/Import dữ liệu
-6. Backup và restore
-7. Chọn hình nền tùy chỉnh
-8. Âm thanh và hiệu ứng
+## Build & Release
 
-### Tính năng mở rộng
-9. Chia sẻ kết quả
-10. Biểu đồ thống kê
-11. Xếp hạng người chơi
-12. Lịch sử đối đầu
+Dự án sử dụng **EAS Build** (Expo Application Services) và **Codemagic** để build production.
+
+```bash
+# Build APK / AAB cho Android (EAS)
+eas build --platform android
+
+# Build IPA cho iOS (EAS)
+eas build --platform ios
+```
+
+GitHub Actions workflows được cấu hình tại `.github/workflows/`:
+- `build-production.yml` — Build production tự động
+- `create-release.yml` — Tạo GitHub Release
+
+---
 
 ## License
 
 MIT
 
+---
+
 ## Liên hệ
 
-Phát triển bởi: Antigravity AI
-Phiên bản: 1.0.0
+Phát triển bởi: **Antigravity AI**  
+Phiên bản: **1.0.5**  
+Bundle ID: `com.tienlen.scorecard`
